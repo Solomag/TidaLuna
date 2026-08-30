@@ -17,31 +17,70 @@ export interface LunaPluginComponentProps extends PropsWithChildren {
 	desc?: ReactNode;
 	sx?: BoxProps["sx"];
 }
+
 export const LunaPluginHeader = React.memo(({ name, version, loadError, author, desc, children, sx, link }: LunaPluginComponentProps) => (
-	<Box sx={sx}>
-		<Stack direction="row" alignItems="center" spacing={1}>
-			<Typography variant="h6">
-				<LunaLink href={link}>{name}</LunaLink>
-				{version && <Typography variant="caption" style={{ opacity: 0.7, marginLeft: 6 }} children={version} />}
-			</Typography>
-			{children}
+	<Box
+		sx={[
+		{
+			display: "grid",
+			gridTemplateColumns: { xs: "minmax(0, 1fr)", md: "minmax(0, 1fr) auto" },
+			columnGap: 2,
+			rowGap: 1,
+			alignItems: "start",
+			minWidth: 0,
+		},
+		...(Array.isArray(sx) ? sx : sx ? [sx] : []),
+	]}
+	>
+		<Stack spacing={0.5} sx={{ minWidth: 0 }}>
+			<Stack direction="row" alignItems="baseline" spacing={0.75} useFlexGap flexWrap="wrap" sx={{ minWidth: 0 }}>
+				<Typography variant="h6" sx={{ minWidth: 0, overflowWrap: "anywhere" }}>
+					<LunaLink href={link}>{name}</LunaLink>
+				</Typography>
+				{version && (
+					<Typography variant="caption" sx={{ opacity: 0.7, flexShrink: 0 }}>
+						{version}
+					</Typography>
+				)}
+			</Stack>
+
+			{desc && (
+				<Typography variant="subtitle2" sx={{ overflowWrap: "anywhere" }}>
+					{desc}
+				</Typography>
+			)}
+
+			{author && <LunaAuthorDisplay author={author} sx={{ alignSelf: "flex-start" }} />}
+
 			{loadError && (
 				<Typography
 					variant="caption"
 					sx={{
+						alignSelf: "flex-start",
 						color: "white",
 						fontWeight: 500,
-						backgroundColor: "rgba(256, 0, 0, 0.5)",
-						padding: 1,
+						backgroundColor: "rgba(255, 0, 0, 0.5)",
+						paddingX: 1,
+						paddingY: 0.5,
 						borderRadius: 1,
-						paddingTop: 1.5,
 					}}
-					children={loadError}
-				/>
+				>
+					{loadError}
+				</Typography>
 			)}
-			<Box sx={{ flexGrow: 1 }} /> {/* This pushes the author section to the right */}
-			{author && <LunaAuthorDisplay author={author} />}
 		</Stack>
-		{desc && <Typography variant="subtitle2" gutterBottom children={desc} />}
+
+		<Box
+			sx={{
+				display: "flex",
+				alignItems: "center",
+				justifyContent: { xs: "flex-start", md: "flex-end" },
+				flexWrap: "wrap",
+				gap: 0.5,
+				minWidth: 0,
+			}}
+		>
+			{children}
+		</Box>
 	</Box>
 ));
