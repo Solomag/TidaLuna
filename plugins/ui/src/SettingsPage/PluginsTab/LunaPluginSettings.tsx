@@ -4,10 +4,12 @@ import type { ErrorInfo, ReactNode } from "react";
 import { LunaPlugin, unloadSet, type PluginPackage } from "@luna/core";
 import { store as obyStore } from "oby";
 
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Divider from "@mui/material/Divider";
 import Stack from "@mui/material/Stack";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
-import Button from "@mui/material/Button";
 
 import { LunaSwitch, LunaTrashButton, SpinningButton } from "../../components";
 import { LiveReloadToggle } from "./LiveReloadToggle";
@@ -47,13 +49,11 @@ class PluginSettingsErrorBoundary extends React.Component<{ name: string; childr
 }
 
 export const LunaPluginSettings = React.memo(({ plugin }: { plugin: LunaPlugin }) => {
-	// Have to wrap in function call as Settings is a functional component
 	const [enabled, setEnabled] = React.useState(plugin.enabled);
 	const [loading, setLoading] = React.useState(plugin.loading._);
 	const [loadError, setLoadError] = React.useState(plugin.loadError._);
 	const [installed, setInstalled] = React.useState(plugin.installed);
 	const [hideSettings, setHideSettings] = React.useState(plugin.store.hideSettings);
-
 	const [pkg, setPackage] = React.useState<PluginPackage>(obyStore.unwrap(plugin.store.package));
 
 	React.useEffect(() => {
@@ -70,12 +70,9 @@ export const LunaPluginSettings = React.memo(({ plugin }: { plugin: LunaPlugin }
 				() => setInstalled(obyStore.unwrap(plugin.store.installed)),
 			),
 		]);
-		return () => {
-			unloadSet(unloads);
-		};
+		return () => unloadSet(unloads);
 	}, [plugin]);
 
-	// Memoize callbacks
 	const handleReload = React.useCallback(plugin.reload.bind(plugin), [plugin]);
 	const toggleEnabled = React.useCallback((_: unknown, checked: boolean) => (checked ? plugin.enable() : plugin.disable()), [plugin]);
 	const uninstall = React.useCallback(plugin.uninstall.bind(plugin), [plugin]);
@@ -83,68 +80,61 @@ export const LunaPluginSettings = React.memo(({ plugin }: { plugin: LunaPlugin }
 	if (!installed) return null;
 
 	const disabled = !enabled || loading;
-
 	const isDev = plugin.store.url.startsWith("http://127.0.0.1");
-
 	const author = pkg.author;
 	const desc = pkg.description;
 	const name = pkg.name;
 	const link = pkg.homepage ?? pkg.repository?.url;
-	let version = isDev ? `${pkg.version ?? ""} [DEV]` : pkg.version;
-
-	// Dont allow disabling core plugins
+	const version = isDev ? `${pkg.version ?? ""} [DEV]` : pkg.version;
 	const isCore = LunaPlugin.corePlugins.has(name);
-
 	const Settings = plugin.exports?.Settings;
 	const hasSettings = Settings !== undefined && Settings !== null;
+	const settingsVisible = hasSettings && !hideSettings;
 
 	return (
-		<Stack
-			spacing={1}
+		<Box
 			sx={{
+				width: "100%",
+				minWidth: 0,
+				boxSizing: "border-box",
 				borderRadius: 3,
 				backgroundColor: "rgba(0, 0, 0, 0.10)",
 				boxShadow: loadError ? "0 0 10px rgba(255, 0, 0, 0.70)" : "none",
-				padding: 2,
-				paddingTop: 1,
-				paddingBottom: hasSettings || hideSettings ? 2 : 1,
+				overflow: "hidden",
 			}}
 		>
-			<LunaPluginHeader
-				name={name}
-				version={version}
-				link={link}
-				loadError={loadError}
-				author={author}
-				desc={desc}
-				children={
-					<>
-						{!isCore && (
-							<Tooltip
-								title={enabled ? `Disable ${name}` : `Enable ${name}`}
-								children={<LunaSwitch checked={enabled} loading={loading} onChange={toggleEnabled} />}
-							/>
-						)}
-						<SpinningButton title="Reload plugin" spin={loading} disabled={disabled} onClick={handleReload} />
-						<LiveReloadToggle plugin={plugin} disabled={disabled} sx={{ marginLeft: 1 }} />
-						<SpinningButton
-							title={hideSettings ? "Show settings" : "Hide settings"}
-							spin={loading}
-							disabled={!enabled || !hasSettings}
-							onClick={() => setHideSettings((prev) => (plugin.store.hideSettings = !prev))}
-							icon={SettingsIcon}
-							sxColor={grey.A400}
+			<Box sx={{ padding: 2 }}>
+				<LunaPluginHeader name={name} version={version} link={link} loadError={loadError} author={author} desc={desc}>
+					{!isCore && (
+						<Tooltip
+							title={enabled ? `Disable ${name}` : `Enable ${name}`}
+							children={<LunaSwitch checked={enabled} loading={loading} onChange={toggleEnabled} />}
 						/>
-						{/* Don't show uninstall button for core plugins */}
-						{!isCore && <LunaTrashButton title="Uninstall plugin" onClick={uninstall} />}
-					</>
-				}
-			/>
-			{hasSettings && !hideSettings && (
-			<PluginSettingsErrorBoundary name={name}>
-				<Settings />
-			</PluginSettingsErrorBoundary>
-		)}
-		</Stack>
+					)}
+					<SpinningButton title="Reload plugin" spin={loading} disabled={disabled} onClick={handleReload} />
+					<LiveReloadToggle plugin={plugin} disabled={disabled} />
+					<SpinningButton
+						title={hideSettings ? "Show settings" : "Hide settings"}
+						spin={loading}
+						disabled={!enabled || !hasSettings}
+						onClick={() => setHideSettings((prev) => (plugin.store.hideSettings = !prev))}
+						icon={SettingsIcon}
+						sxColor={grey.A400}
+					/>
+					{!isCore && <LunaTrashButton title="Uninstall plugin" onClick={uninstall} />}
+				</LunaPluginHeader>
+			</Box>
+
+			{settingsVisible && (
+				<>
+					<Divider />
+					<Box sx={{ width: "100%", minWidth: 0, boxSizing: "border-box", padding: 2 }}>
+						<PluginSettingsErrorBoundary name={name}>
+							<Settings />
+						</PluginSettingsErrorBoundary>
+					</Box>
+				</>
+			)}
+		</Box>
 	);
 });
