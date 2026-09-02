@@ -12,7 +12,10 @@
 			"name": "@meowarex/TidalLuna-Plugins",
 			"repo": "meowarex/TidaLuna-Plugins",
 			"url": "https://github.com/meowarex/TidaLuna-Plugins/releases/download/latest/store.json",
-			"added": "2025-06-02"
+			"added": "2025-06-02",
+			"status": "removed",
+			"reason": "Moved",
+			"movedTo": "https://release.radiant-lyrics.org/store.json"
 		},
 		{
 			"name": "@seth/lunar",
@@ -196,6 +199,36 @@
 			"status": "removed",
 			"removed": "2026-09-02",
 			"reason": "Repo renamed to meowarex/TidaLuna-Plugins, listed under the new url"
+		},
+		{
+			"name": "@meowarex/radiant-lyrics",
+			"repo": "meowarex/TidaLuna-Plugins",
+			"url": "https://release.radiant-lyrics.org/store.json",
+			"added": "2026-11-04"
+		},
+		{
+			"name": "@kisakay/luna-plugins",
+			"repo": "Kisakay/luna-plugins",
+			"url": "https://github.com/Kisakay/luna-plugins/releases/download/latest/store.json",
+			"added": "2026-09-28"
+		},
+		{
+			"name": "@baehyolyn/luna-plugins",
+			"repo": "BaeHyolyn/luna-plugins",
+			"url": "https://github.com/BaeHyolyn/luna-plugins/releases/latest/download/store.json",
+			"added": "2026-10-25"
+		},
+		{
+			"name": "@drousis3/tidaluna-nice-to-have-plugins",
+			"repo": "Drousis3/Tidaluna-nice-to-have-plugins",
+			"url": "https://github.com/Drousis3/Tidaluna-nice-to-have-plugins/releases/download/latest/store.json",
+			"added": "2026-10-29"
+		},
+		{
+			"name": "@pimull/tidaluna-album-editions",
+			"repo": "pimull/tidaluna-album-editions",
+			"url": "https://github.com/pimull/tidaluna-album-editions/releases/latest/download/store.json",
+			"added": "2026-11-13"
 		}
 	]
 }
