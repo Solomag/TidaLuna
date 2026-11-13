@@ -1,4 +1,6 @@
 import { asyncDebounce, memoize, memoizeArgless, registerEmitter, type AddReceiver, type Emit, type Memoized } from "@inrixia/helpers";
+
+import { listenerError } from "../../helpers/listenerError";
 import type { IRecording, ITrack } from "musicbrainz-api";
 
 import { ftch, ReactiveStore, type LunaUnload, type LunaUnloads, type Tracer } from "@luna/core";
@@ -155,7 +157,7 @@ export class MediaItem extends ContentBase {
 			if (item?.productId === undefined) return MediaItem.trace.warn("player/PRELOAD_ITEM intercepted without productId!", item);
 			const mediaItem = await this.fromId(item.productId, item.productType);
 			if (mediaItem === undefined) return;
-			emit(mediaItem, mediaItem.trace.err.withContext("preloadItem.runListeners"));
+			emit(mediaItem, listenerError(mediaItem.trace, "preloadItem.runListeners"));
 		}),
 	);
 	/** Triggered on "playbackControls/MEDIA_PRODUCT_TRANSITION"*/
@@ -172,7 +174,7 @@ export class MediaItem extends ContentBase {
 					this._supportsSpatialAudio = playbackContext.actualAudioMode !== "STEREO";
 				}
 
-				await emit(mediaItem, mediaItem.trace.err.withContext("mediaProductTransition.runListeners"));
+				await emit(mediaItem, listenerError(mediaItem.trace, "mediaProductTransition.runListeners"));
 			}),
 		),
 	);
@@ -188,7 +190,7 @@ export class MediaItem extends ContentBase {
 				async ({ mediaProduct: { productId, productType } }: redux.InterceptPayload<"playbackControls/PREFILL_MEDIA_PRODUCT_TRANSITION">) => {
 					const mediaItem = await this.fromId(productId, productType);
 					if (mediaItem === undefined) return;
-					await emit(mediaItem, mediaItem.trace.err.withContext("prefillMPT.runListeners"));
+					await emit(mediaItem, listenerError(mediaItem.trace, "prefillMPT.runListeners"));
 				},
 			),
 		),
