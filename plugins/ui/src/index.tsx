@@ -12,6 +12,9 @@ import { confirm } from "./helpers/confirm";
 import { lunaMuiTheme } from "./lunaTheme";
 import { currentSettingsTab, LunaPage } from "./SettingsPage";
 import { addToStores } from "./SettingsPage/PluginStoreTab";
+// Store list API for plugins that render their own store UI
+export { addToStores, hiddenStoreUrls, refreshRegistry, registryStores, removeStore, userStoreUrls, visibleStores } from "./SettingsPage/PluginStoreTab";
+export type { RegistryStore, StoreEntry } from "./SettingsPage/PluginStoreTab";
 import { fetchReleases } from "./SettingsPage/SettingsTab/LunaClientUpdate";
 
 import { pkg } from "plugins/lib.native/src/index.native";
