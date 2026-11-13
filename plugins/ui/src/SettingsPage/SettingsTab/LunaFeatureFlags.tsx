@@ -1,11 +1,16 @@
 import { redux, Tidal } from "@luna/lib";
 import React from "react";
-import { LunaSettings, LunaSwitchSetting, SpinningButton } from "../../components";
+import { LunaSettings, LunaSwitch, SpinningButton } from "../../components";
 
-import Grid from "@mui/material/Grid";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
 
 import SettingsIcon from "@mui/icons-material/Settings";
 import { grey } from "@mui/material/colors";
+
+function flagTitle(name: string) {
+	return name[0].toUpperCase() + name.slice(1).replaceAll("-", " ");
+}
 
 export const LunaFeatureFlags = React.memo(() => {
 	const [featureFlags, setFeatureFlags] = React.useState(Tidal.featureFlags);
@@ -15,6 +20,7 @@ export const LunaFeatureFlags = React.memo(() => {
 		redux.actions["featureFlags/TOGGLE_USER_OVERRIDE"]({ ...flag, value: !flag.value });
 		setFeatureFlags(Tidal.featureFlags);
 	}, []);
+
 	return (
 		<LunaSettings
 			title="Feature flags"
@@ -25,25 +31,60 @@ export const LunaFeatureFlags = React.memo(() => {
 			display={hide ? "none" : "flex"}
 		>
 			{!hide && (
-				<Grid spacing={2} container>
+				<Box
+					data-lunatic-feature-flags-grid="true"
+					sx={{
+						display: "grid",
+						gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+						gap: "12px 16px",
+						width: "100%",
+						minWidth: 0,
+						"@media (max-width: 1180px)": { gridTemplateColumns: "repeat(2, minmax(0, 1fr))" },
+						"@media (max-width: 700px)": { gridTemplateColumns: "minmax(0, 1fr)" },
+					}}
+				>
 					{Object.values(featureFlags)
 						.sort((a, b) => a.name.localeCompare(b.name))
 						.map((flag) => (
-							<Grid
+							<Box
 								key={flag.name}
-								size={6}
-								sx={{ borderRadius: 4, backgroundColor: "rgba(0, 0, 0, 0.20)", boxShadow: 2, paddingLeft: 1.5 }}
-								children={
-									<LunaSwitchSetting
-										disabled={flag.type !== "BOOLEAN"}
-										title={flag.name[0].toUpperCase() + flag.name.slice(1).replaceAll("-", " ")}
-										onClick={setFlag.bind(null, flag)}
-										checked={flag.value}
-									/>
-								}
-							/>
+								data-lunatic-feature-flag="true"
+								sx={{
+									display: "flex",
+									alignItems: "center",
+									justifyContent: "space-between",
+									gap: "12px",
+									width: "100%",
+									minWidth: 0,
+									minHeight: "58px",
+									boxSizing: "border-box",
+									padding: "10px 12px",
+									overflow: "hidden",
+									backgroundColor: "var(--lunatic-luna-inner, rgba(0, 0, 0, .20))",
+									border: "1px solid var(--lunatic-luna-edge, rgba(255,255,255,.075))",
+								}}
+							>
+								<Typography
+									variant="h8"
+									title={flagTitle(flag.name)}
+									sx={{
+										flex: "1 1 auto",
+										minWidth: 0,
+										lineHeight: 1.25,
+										overflowWrap: "anywhere",
+									}}
+								>
+									{flagTitle(flag.name)}
+								</Typography>
+								<LunaSwitch
+									disabled={flag.type !== "BOOLEAN"}
+									onClick={setFlag.bind(null, flag)}
+									checked={flag.value}
+									sx={{ flex: "0 0 auto", position: "relative", margin: 0 }}
+								/>
+							</Box>
 						))}
-				</Grid>
+				</Box>
 			)}
 		</LunaSettings>
 	);

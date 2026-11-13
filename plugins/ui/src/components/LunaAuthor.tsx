@@ -15,8 +15,8 @@ const AuthorName = React.memo((props: { name: string; prefix?: string } & Typogr
 	</Typography>
 ));
 
-export const LunaAuthorDisplay = React.memo((props: { author: LunaAuthor | string; prefix?: string } & StackProps) => {
-	const { author, prefix } = props;
+export const LunaAuthorDisplay = React.memo((props: { author: LunaAuthor | string; prefix?: string; hideAvatar?: boolean } & StackProps) => {
+	const { author, prefix, hideAvatar, ...stackProps } = props;
 	if (typeof author === "string") return <Box paddingTop={0.75} children={<AuthorName name={author} />} />;
 	return (
 		<Tooltip title={`Visit ${author.name}'s profile`}>
@@ -27,14 +27,14 @@ export const LunaAuthorDisplay = React.memo((props: { author: LunaAuthor | strin
 				onClick={() => {
 					window.open(author.url, "_blank");
 				}}
-				{...props}
+				{...stackProps}
 				sx={{
 					cursor: "pointer",
-					...props.sx,
+					...stackProps.sx,
 				}}
 			>
 				<AuthorName name={author.name} prefix={prefix} />
-				{author.avatarUrl && (
+				{author.avatarUrl && !hideAvatar && (
 					<Avatar
 						src={author.avatarUrl}
 						sx={{

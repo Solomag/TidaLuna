@@ -4,66 +4,93 @@ import React, { useEffect, useState } from "react";
 
 import { LunaPluginHeader } from "../PluginsTab/LunaPluginHeader";
 
-import ButtonBase from "@mui/material/ButtonBase";
-import Typography from "@mui/material/Typography";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
 
 export const LunaStorePlugin = React.memo(({ url }: { url: string }) => {
 	const [plugin, setPlugin] = useState<LunaPlugin | undefined>(undefined);
 	const [loadError, setLoadError] = useState<string | undefined>(undefined);
-	const [isHovered, setIsHovered] = useState(false);
+	const [installed, setInstalled] = useState(false);
+	const [busy, setBusy] = useState(false);
 
 	useEffect(() => {
-		LunaPlugin.fromStorage({ url }).then(setPlugin).catch(setLoadError);
+		LunaPlugin.fromStorage({ url })
+			.then((next) => {
+				setPlugin(next);
+				setInstalled(next.installed);
+			})
+			.catch(setLoadError);
 	}, [url]);
 
 	if (!plugin) return null;
 
 	const version = url.startsWith("http://127.0.0.1") ? `${plugin.package?.version ?? ""} [DEV]` : plugin.package?.version;
 
+	const toggleInstalled = async () => {
+		if (busy) return;
+		setBusy(true);
+		const next = !installed;
+		setInstalled(next);
+		try {
+			if (next) await plugin.install();
+			else await plugin.uninstall();
+			setInstalled(plugin.installed);
+		} catch (error) {
+			setInstalled(!next);
+			console.error(`[Luna UI] Failed to ${next ? "install" : "uninstall"} ${plugin.name}`, error);
+		} finally {
+			setBusy(false);
+		}
+	};
+
 	return (
-		<ButtonBase
-			onMouseEnter={() => setIsHovered(true)}
-			onMouseLeave={() => setIsHovered(false)}
+		<Box
+			data-solo-plugin-card="true"
 			sx={{
-				position: "relative", // Needed for absolute positioning of children
-				borderRadius: 2,
-				backgroundColor: `rgba(0, 0, 0, ${!isHovered ? 0.2 : 0.5})`,
-				padding: 2,
-				paddingBottom: 1,
-				paddingTop: 1,
-				boxShadow: 5,
-				transition: "opacity 0.3s ease-in-out",
-				opacity: plugin.installed && !isHovered ? 0.5 : 1, // Keep installed opacity logic
-				overflow: "hidden",
+				position: "relative",
+				display: "flex",
+				flexDirection: "column",
+				alignItems: "stretch",
 				width: "100%",
+				height: "100%",
+				minWidth: 0,
+				boxSizing: "border-box",
+				borderRadius: 2,
+				backgroundColor: "rgba(0, 0, 0, 0.2)",
+				padding: "14px 20px 18px",
+				boxShadow: 5,
 			}}
-			style={{ textAlign: "left" }}
-			onClick={() => (plugin.installed ? plugin.uninstall() : plugin.install())}
 		>
 			<LunaPluginHeader
-				sx={{ transition: "opacity 0.3s ease-in-out", opacity: isHovered ? 0.2 : 1, width: "100%" }}
+				sx={{
+					width: "100%",
+					minWidth: 0,
+					flex: "1 1 auto",
+					alignContent: "start",
+					"& > :nth-of-type(2)": {
+						minHeight: "2.6em",
+						display: "-webkit-box",
+						WebkitBoxOrient: "vertical",
+						WebkitLineClamp: 2,
+						overflow: "hidden",
+					},
+				}}
 				name={plugin.name}
 				version={version}
 				loadError={loadError}
 				author={plugin.package?.author}
 				desc={plugin.package?.description}
 			/>
-			<Typography
-				sx={{
-					position: "absolute",
-					top: "50%",
-					left: "50%",
-					transform: "translate(-50%, -50%)",
-					opacity: isHovered ? 1 : 0,
-					transition: "opacity 0.3s ease-in-out",
-					fontWeight: "bold",
-					color: plugin.installed ? "red" : "green",
-					borderRadius: 2,
-					padding: 1,
-					pointerEvents: "none",
-				}}
-				children={plugin.installed ? "Uninstall" : "Install"}
-			/>
-		</ButtonBase>
+			<Button
+				className="solo-plugin-store-real-action"
+				variant="contained"
+				size="small"
+				disabled={busy}
+				onClick={toggleInstalled}
+				sx={{ alignSelf: "flex-end", minWidth: 84, height: 32, marginTop: "auto", flex: "0 0 auto" }}
+			>
+				{busy ? "Working…" : installed ? "Uninstall" : "Install"}
+			</Button>
+		</Box>
 	);
 });

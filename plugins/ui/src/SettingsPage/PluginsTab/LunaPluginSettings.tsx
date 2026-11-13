@@ -12,6 +12,7 @@ import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 
 import { LunaSwitch, LunaTrashButton, SpinningButton } from "../../components";
+import { actionIconColor, useLunaUiAppearance } from "../../appearance";
 import { LiveReloadToggle } from "./LiveReloadToggle";
 import { LunaPluginHeader } from "./LunaPluginHeader";
 
@@ -49,6 +50,7 @@ class PluginSettingsErrorBoundary extends React.Component<{ name: string; childr
 }
 
 export const LunaPluginSettings = React.memo(({ plugin }: { plugin: LunaPlugin }) => {
+	useLunaUiAppearance();
 	const [enabled, setEnabled] = React.useState(plugin.enabled);
 	const [loading, setLoading] = React.useState(plugin.loading._);
 	const [loadError, setLoadError] = React.useState(plugin.loadError._);
@@ -111,17 +113,17 @@ export const LunaPluginSettings = React.memo(({ plugin }: { plugin: LunaPlugin }
 							children={<LunaSwitch checked={enabled} loading={loading} onChange={toggleEnabled} />}
 						/>
 					)}
-					<SpinningButton title="Reload plugin" spin={loading} disabled={disabled} onClick={handleReload} />
-					<LiveReloadToggle plugin={plugin} disabled={disabled} />
+					<SpinningButton title="Reload plugin" spin={loading} disabled={disabled} onClick={handleReload} sxColor={actionIconColor("reload")} />
+					<LiveReloadToggle plugin={plugin} disabled={disabled} sx={{ color: actionIconColor("liveReload") }} />
 					<SpinningButton
 						title={hideSettings ? "Show settings" : "Hide settings"}
 						spin={loading}
 						disabled={!enabled || !hasSettings}
 						onClick={() => setHideSettings((prev) => (plugin.store.hideSettings = !prev))}
 						icon={SettingsIcon}
-						sxColor={grey.A400}
+						sxColor={actionIconColor("settings")}
 					/>
-					{!isCore && <LunaTrashButton title="Uninstall plugin" onClick={uninstall} />}
+					{!isCore && <LunaTrashButton title="Uninstall plugin" onClick={uninstall} sx={{ color: actionIconColor("uninstall") }} />}
 				</LunaPluginHeader>
 			</Box>
 

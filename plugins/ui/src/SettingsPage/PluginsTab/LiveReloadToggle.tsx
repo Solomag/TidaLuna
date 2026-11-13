@@ -42,8 +42,9 @@ export const LiveReloadToggle = React.memo((props: LiveReloadToggleButtonProps) 
 			<IconButton
 				{...iconButtonProps}
 				onClick={handleClick}
-				color={props.plugin.liveReload ? "success" : "error"}
+				color={undefined}
 				sx={{
+					color: iconButtonProps.sx ? undefined : (props.plugin.liveReload ? "success.main" : "error.main"),
 					animation: animate ? "vibrate 0.25s linear infinite" : "none",
 					"@keyframes vibrate": {
 						"0%": { transform: "rotate(0deg) scale(1)" },
@@ -52,6 +53,7 @@ export const LiveReloadToggle = React.memo((props: LiveReloadToggleButtonProps) 
 						"60%": { transform: "rotate(4deg) scale(1.1)" },
 						"100%": { transform: "rotate(0deg) scale(1)" },
 					},
+					...(iconButtonProps.sx as object),
 				}}
 			>
 				{props.plugin.liveReload ? <SensorsIcon /> : <SensorsOffIcon />}

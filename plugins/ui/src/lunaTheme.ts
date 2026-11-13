@@ -101,25 +101,82 @@ export const lunaMuiTheme = createTheme({
 			styleOverrides: {
 				root: {
 					padding: 7,
-				},
-				switchBase: {
-					// Styles for the switch thumb when unchecked
-					"& + .MuiSwitch-track": {
-						opacity: 0.5,
+					"& .MuiSwitch-switchBase.MuiSwitch-colorPrimary": {
+						color: `${grey[600]} !important`,
 					},
-					// Styles for the switch thumb when checked
-					"&.Mui-checked": {
-						// Need to target the track specifically when checked
-						"& + .MuiSwitch-track": {
-							opacity: 1,
-						},
+					"& .MuiSwitch-switchBase.MuiSwitch-colorPrimary.Mui-checked": {
+						color: `${grey[200]} !important`,
+					},
+					"& .MuiSwitch-switchBase.MuiSwitch-colorPrimary + .MuiSwitch-track": {
+						backgroundColor: `${grey[700]} !important`,
+						opacity: "1 !important",
+					},
+					"& .MuiSwitch-switchBase.MuiSwitch-colorPrimary.Mui-checked + .MuiSwitch-track": {
+						backgroundColor: `${grey[500]} !important`,
+						opacity: "1 !important",
 					},
 				},
-				track: {
-					// General track styles
-					opacity: 1,
-					borderRadius: 12,
-				},
+			},
+		},
+		MuiTextField: {
+			styleOverrides: {
+				root: ({ theme }) => ({
+					"& .MuiInputLabel-root, & .MuiFormLabel-root": {
+						color: `${theme.palette.text.secondary} !important`,
+					},
+					"& .MuiInputLabel-root.Mui-focused, & .MuiFormLabel-root.Mui-focused": {
+						color: `${theme.palette.text.primary} !important`,
+					},
+					"& .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline": {
+						borderColor: "rgba(255,255,255,.28) !important",
+					},
+					"& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline": {
+						borderColor: "rgba(255,255,255,.48) !important",
+					},
+					"& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": {
+						borderColor: `${theme.palette.text.primary} !important`,
+					},
+				}),
+			},
+		},
+		MuiFormLabel: {
+			styleOverrides: {
+				root: ({ theme }) => ({
+					"&&": {
+						color: `${theme.palette.text.secondary} !important`,
+					},
+					"&&.Mui-focused": {
+						color: `${theme.palette.text.primary} !important`,
+					},
+				}),
+			},
+		},
+		MuiInputLabel: {
+			styleOverrides: {
+				root: ({ theme }) => ({
+					"&&": {
+						color: `${theme.palette.text.secondary} !important`,
+					},
+					"&&.Mui-focused": {
+						color: `${theme.palette.text.primary} !important`,
+					},
+				}),
+			},
+		},
+		MuiOutlinedInput: {
+			styleOverrides: {
+				root: ({ theme }) => ({
+					color: `${theme.palette.text.primary} !important`,
+					"&& .MuiOutlinedInput-notchedOutline": {
+						borderColor: "rgba(255,255,255,.23) !important",
+					},
+					"&&:hover .MuiOutlinedInput-notchedOutline": {
+						borderColor: "rgba(255,255,255,.42) !important",
+					},
+					"&&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+						borderColor: `${theme.palette.text.primary} !important`,
+					},
+				}),
 			},
 		},
 		MuiSelect: {

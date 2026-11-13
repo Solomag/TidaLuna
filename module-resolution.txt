@@ -1,0 +1,20 @@
+﻿build/buildPlugins.ts:14:const pkg = JSON.parse(await readFile(join(process.cwd(), "./package.json"), "utf8"));
+build/index.ts:21:const externals = ["@luna/*", "oby", "react", "react-dom/client", "react/jsx-runtime", "electron"];
+build/index.ts:24:	const pkgPath = path.join(pluginPath, "package.json");
+build/index.ts:42:		external: [...(opts?.external ?? []), ...externals],
+build/plugins/dynamicExternals.ts:5:	externals,
+build/plugins/dynamicExternals.ts:8:	externals?: string[];
+build/plugins/dynamicExternals.ts:13:		const externalsRegex = (externals ?? build.initialOptions.external)?.map(sanitizeRegex).join("|");
+build/plugins/dynamicExternals.ts:14:		if (externalsRegex === undefined) return;
+build/plugins/dynamicExternals.ts:15:		const filter = new RegExp(`^(?:${externalsRegex})$`);
+build/plugins/lunaNativePlugin.ts:21:				external: ["@luna/*", "electron", "./app/package.json", "./original.asar/*"],
+build/plugins/lunaNativePlugin.ts:31:						// Override externals as we dont want to dyanmic resolve electron or ./original.asar etc
+build/plugins/lunaNativePlugin.ts:32:						externals: ["@luna/*"],
+build/plugins/lunaNativePlugin.ts:45:				external: ["@luna/*", "electron", "./app/package.json", "./original.asar/*"],
+build/plugins/writeBundlePlugin.ts:27:					// Only write the package.json once
+esbuild.config.ts:11:			await writeFile("./dist/package.json", await readFile("./package.json", "utf-8"));
+esbuild.config.ts:24:		external: ["electron", "module", "./app/package.json"],
+esbuild.config.ts:34:		external: ["electron"],
+native/injector.ts:18:const tidalPackagePromise = readFile(path.join(tidalAppPath, "package.json"), "utf8").then(JSON.parse);
+native/update.ts:13:export const pkg = async (): Promise<PackageJson> => require("./app/package.json");
+render/src/LunaPlugin.ts:56:			throw new Error(`Failed to fetch package.json for ${url}: ${err?.message}`);

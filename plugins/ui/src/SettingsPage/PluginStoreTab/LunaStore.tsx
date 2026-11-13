@@ -64,6 +64,7 @@ export const LunaStore = React.memo(({ url, onRemove, searchQuery }: { url: stri
 
 	return (
 		<Stack
+			data-solo-plugin-store="true"
 			spacing={1}
 			sx={{
 				borderRadius: 3,
@@ -85,9 +86,9 @@ export const LunaStore = React.memo(({ url, onRemove, searchQuery }: { url: stri
 					</>
 				}
 			/>
-			<Grid columns={2} spacing={2} container>
+			<Grid data-solo-plugin-store-grid="true" columns={2} spacing={2} container>
 				{filteredPlugins?.map((plugin) => (
-					<Grid size={1} children={<LunaStorePlugin url={`${url}/${isLocalDevStore ? plugin : plugin.replace(" ", ".")}`} key={plugin} />} />
+					<Grid data-solo-plugin-grid-item="true" size={1} children={<LunaStorePlugin url={`${url}/${isLocalDevStore ? plugin : plugin.replace(" ", ".")}`} key={plugin} />} />
 				))}
 			</Grid>
 		</Stack>

@@ -1,5 +1,7 @@
 import React, { type PropsWithChildren } from "react";
 
+import "./lunatic/runtime";
+
 import Container from "@mui/material/Container";
 import Tab from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
@@ -34,7 +36,11 @@ export const LunaPage = React.memo(() => {
 		};
 	}, []);
 	return (
-		<Container maxWidth="md" sx={{ padding: 0, marginBottom: 10, flexGrow: 1 }}>
+		<Container
+			data-luna-settings-page="true"
+			maxWidth="md"
+			sx={{ padding: 0, marginBottom: 10, flexGrow: 1 }}
+		>
 			<Tabs value={currentTab} onChange={(_, tab) => (currentSettingsTab._ = tab)}>
 				<Tab iconPosition="start" icon={<ExtensionIcon />} value={"Plugins"} label={"Plugins"} />
 				<Tab iconPosition="start" icon={<StorefrontIcon />} value={"Plugin Store"} label={"Plugin Store"} />

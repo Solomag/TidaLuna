@@ -363,7 +363,35 @@ export class LunaPlugin {
 		this.loadError._ = undefined;
 	}
 	public async reload() {
-		// LoadExports will handle unloading etc and ensure code is live
+		// @luna/ui is a shared runtime module. Older third-party plugin bundles may
+		// import it without registering themselves in this.dependants, leaving them
+		// with stale references after a UI reload. Reload active user plugins as a
+		// compatibility fallback so a UI reload is actually global.
+		if (this.name === "@luna/ui") {
+			const registeredDependants = new Set(this.dependants);
+			const fallbackDependants = Object.values(LunaPlugin.plugins).filter(
+				(plugin) =>
+					plugin !== this &&
+					plugin.enabled &&
+					plugin.installed &&
+					!LunaPlugin.corePlugins.has(plugin.name) &&
+					!registeredDependants.has(plugin),
+			);
+
+			await this.loadExports(true);
+
+			for (const plugin of fallbackDependants) {
+				// State may have changed while @luna/ui and its registered dependants reloaded.
+				if (!plugin.enabled || !plugin.installed) continue;
+				this.trace.log(`Reloading UI consumer ${plugin.name}`);
+				await plugin.reload().catch(
+					this.trace.err.withContext(`Failed to reload ${plugin.name} after @luna/ui reload`),
+				);
+			}
+			return;
+		}
+
+		// LoadExports will handle unloading registered dependants etc and ensure code is live.
 		await this.loadExports(true);
 	}
 	// #endregion

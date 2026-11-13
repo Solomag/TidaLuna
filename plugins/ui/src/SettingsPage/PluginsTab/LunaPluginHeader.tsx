@@ -7,6 +7,7 @@ import Typography from "@mui/material/Typography";
 import React, { type PropsWithChildren, type ReactNode } from "react";
 
 import { LunaAuthorDisplay, LunaLink } from "../../components";
+import { useLunaUiAppearance } from "../../appearance";
 
 export interface LunaPluginComponentProps extends PropsWithChildren {
 	name: string;
@@ -18,7 +19,9 @@ export interface LunaPluginComponentProps extends PropsWithChildren {
 	sx?: BoxProps["sx"];
 }
 
-export const LunaPluginHeader = React.memo(({ name, version, loadError, author, desc, children, sx, link }: LunaPluginComponentProps) => (
+export const LunaPluginHeader = React.memo(({ name, version, loadError, author, desc, children, sx, link }: LunaPluginComponentProps) => {
+	const appearance = useLunaUiAppearance();
+	return (
 	<Box
 		sx={[
 		{
@@ -50,7 +53,7 @@ export const LunaPluginHeader = React.memo(({ name, version, loadError, author, 
 				</Typography>
 			)}
 
-			{author && <LunaAuthorDisplay author={author} sx={{ alignSelf: "flex-start" }} />}
+			{author && <LunaAuthorDisplay author={author} hideAvatar={appearance.hideAuthorAvatars} sx={{ alignSelf: "flex-start" }} />}
 
 			{loadError && (
 				<Typography
@@ -83,4 +86,5 @@ export const LunaPluginHeader = React.memo(({ name, version, loadError, author, 
 			{children}
 		</Box>
 	</Box>
-));
+	);
+});

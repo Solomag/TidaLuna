@@ -1,0 +1,270 @@
+--- a/plugins/ui/src/lunaTheme.ts
++++ b/plugins/ui/src/lunaTheme.ts
+@@ -99,23 +99,26 @@
+ 		},
+ 		MuiSwitch: {
+ 			styleOverrides: {
+-				root: {
++				root: ({ theme }) => ({
+ 					padding: 7,
+-				},
++					"& .MuiSwitch-switchBase.MuiSwitch-colorPrimary": {
++						color: `${theme.palette.grey[600]} !important`,
++					},
++					"& .MuiSwitch-switchBase.MuiSwitch-colorPrimary + .MuiSwitch-track": {
++						backgroundColor: `${theme.palette.grey[700]} !important`,
++						opacity: "1 !important",
++					},
++					"& .MuiSwitch-switchBase.MuiSwitch-colorPrimary.Mui-checked": {
++						color: `${theme.palette.grey[200]} !important`,
++					},
++					"& .MuiSwitch-switchBase.MuiSwitch-colorPrimary.Mui-checked + .MuiSwitch-track": {
++						backgroundColor: `${theme.palette.grey[500]} !important`,
++						opacity: "1 !important",
++					},
++				}),
+ 				switchBase: ({ theme }) => ({
+ 					color: theme.palette.grey[600],
+-					"& + .MuiSwitch-track": {
+-						backgroundColor: theme.palette.grey[700],
+-						opacity: 1,
+-					},
+-					"&.Mui-checked": {
+-						color: theme.palette.grey[200],
+-						"& + .MuiSwitch-track": {
+-							backgroundColor: theme.palette.grey[500],
+-							opacity: 1,
+-						},
+-					},
+-					"&.Mui-checked:hover, &:hover": {
++					"&:hover": {
+ 						backgroundColor: "rgba(255,255,255,.08)",
+ 					},
+ 				}),
+--- a/plugins/ui/src/SettingsPage/AppearanceSettings.tsx
++++ b/plugins/ui/src/SettingsPage/AppearanceSettings.tsx
+@@ -26,16 +26,33 @@
+ 	label,
+ 	value,
+ 	onChange,
++	previewVar,
++	onPreview,
+ }: {
+ 	label: string;
+ 	value: string;
+ 	onChange: (value: string) => void;
++	previewVar: string;
++	onPreview: (variable: string, value: string) => void;
+ }) {
+ 	const pickerRef = React.useRef<HTMLInputElement>(null);
++	const swatchRef = React.useRef<HTMLButtonElement>(null);
++
++	React.useEffect(() => {
++		if (pickerRef.current) pickerRef.current.value = cssColorToPicker(value);
++		if (swatchRef.current) swatchRef.current.style.backgroundColor = value;
++	}, [value]);
++
++	const preview = React.useCallback((next: string) => {
++		if (swatchRef.current) swatchRef.current.style.backgroundColor = next;
++		onPreview(previewVar, next);
++	}, [onPreview, previewVar]);
++
+ 	return (
+ 		<Box sx={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 38px", gap: .75, minWidth: 0 }}>
+ 			<TextField label={label} value={value} size="small" fullWidth onChange={(event) => onChange(event.target.value)} />
+ 			<Button
++				ref={swatchRef}
+ 				title={`Pick ${label.toLowerCase()}`}
+ 				aria-label={`Pick ${label.toLowerCase()}`}
+ 				onClick={() => pickerRef.current?.click()}
+@@ -45,13 +62,14 @@
+ 					padding: 0,
+ 					border: "1px solid rgba(255,255,255,.18)",
+ 					background: value,
+-					"&:hover": { background: value, filter: "brightness(1.15)" },
++					"&:hover": { filter: "brightness(1.15)" },
+ 				}}
+ 			/>
+ 			<input
+ 				ref={pickerRef}
+ 				type="color"
+ 				defaultValue={cssColorToPicker(value)}
++				onInput={(event) => preview(event.currentTarget.value)}
+ 				onChange={(event) => onChange(event.currentTarget.value)}
+ 				style={{ position: "absolute", width: 1, height: 1, opacity: 0, pointerEvents: "none" }}
+ 			/>
+@@ -88,66 +106,88 @@
+ 	return `${a.backgroundZoom}% auto`;
+ }
+ 
+-function AppearancePreview({ a }: { a: LunaUiAppearance }) {
++const AppearancePreview = React.memo(React.forwardRef<HTMLDivElement, { a: LunaUiAppearance }>(({ a }, ref) => {
+ 	const radius = `${Math.max(0, Number(a.borderRadius) || 0)}px`;
++	const vars = {
++		"--preview-page-bg": a.pageBackground,
++		"--preview-shell-bg": a.shellBackground,
++		"--preview-card-bg": a.cardBackground,
++		"--preview-inner-bg": a.innerBackground,
++		"--preview-control-bg": a.controlBackground,
++		"--preview-border": a.borderColor,
++		"--preview-strong-border": a.strongBorderColor,
++		"--preview-text": a.textColor,
++		"--preview-muted": a.mutedTextColor,
++		"--preview-icon-all": a.iconColor,
++		"--preview-icon-reload": a.reloadIconColor,
++		"--preview-icon-live": a.liveReloadIconColor,
++		"--preview-icon-settings": a.settingsIconColor,
++		"--preview-icon-uninstall": a.uninstallIconColor,
++	} as React.CSSProperties;
+ 	const icon = (label: string, color: string) => (
+-		<Box title={label} sx={{ width: 28, height: 28, display: "grid", placeItems: "center", color, border: `1px solid ${a.borderColor}`, borderRadius: radius, fontWeight: 800 }}>
++		<Box title={label} sx={{ width: 28, height: 28, display: "grid", placeItems: "center", color, border: "1px solid var(--preview-border)", borderRadius: radius, fontWeight: 800 }}>
+ 			╨▓тАФ╨П
+ 		</Box>
+ 	);
+ 	return (
+ 		<Box
++			ref={ref}
++			style={vars}
+ 			sx={{
+ 				position: "sticky",
+ 				top: 12,
+ 				minHeight: 390,
+ 				padding: 2,
+ 				borderRadius: radius,
+-				backgroundColor: a.pageBackground,
+-				backgroundImage: a.pageBackgroundImage ? `url("${a.pageBackgroundImage}")` : "none",
++				backgroundColor: "var(--preview-page-bg)",
++				backgroundImage: "var(--preview-page-bg)"Image ? `url("${"var(--preview-page-bg)"Image}")` : "none",
+ 				backgroundSize: backgroundSize(a),
+ 				backgroundPosition: `${a.backgroundPositionX}% ${a.backgroundPositionY}%`,
+ 				backgroundRepeat: "no-repeat",
+-				border: `1px solid ${a.borderColor}`,
+-				color: a.textColor,
++				border: "1px solid var(--preview-border)",
++				color: "var(--preview-text)",
+ 				overflow: "hidden",
+ 			}}
+ 		>
+-			<Typography variant="h7" sx={{ color: a.textColor }}>Page background</Typography>
+-			<Typography variant="subtitle2" sx={{ color: a.mutedTextColor, marginBottom: 1.5 }}>Muted text</Typography>
+-			<Box sx={{ padding: 1.5, borderRadius: radius, background: a.shellBackground, border: `1px solid ${a.borderColor}`, opacity: a.surfaceOpacity / 100 }}>
+-				<Typography variant="h8" sx={{ color: a.textColor }}>Section background</Typography>
+-				<Box sx={{ marginTop: 1.25, padding: 1.25, borderRadius: radius, background: a.cardBackground, border: `1px solid ${a.borderColor}` }}>
++			<Typography variant="h7" sx={{ color: "var(--preview-text)" }}>Page background</Typography>
++			<Typography variant="subtitle2" sx={{ color: "var(--preview-muted)", marginBottom: 1.5 }}>Muted text</Typography>
++			<Box sx={{ padding: 1.5, borderRadius: radius, background: "var(--preview-shell-bg)", border: "1px solid var(--preview-border)", opacity: a.surfaceOpacity / 100 }}>
++				<Typography variant="h8" sx={{ color: "var(--preview-text)" }}>Section background</Typography>
++				<Box sx={{ marginTop: 1.25, padding: 1.25, borderRadius: radius, background: "var(--preview-card-bg)", border: "1px solid var(--preview-border)" }}>
+ 					<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+-						{!a.hideAuthorAvatars && <Box sx={{ width: 24, height: 24, borderRadius: "50%", background: a.strongBorderColor }} />}
++						{!a.hideAuthorAvatars && <Box sx={{ width: 24, height: 24, borderRadius: "50%", background: "var(--preview-strong-border)" }} />}
+ 						<Box sx={{ minWidth: 0, flex: 1 }}>
+-							<Typography sx={{ color: a.textColor, fontWeight: 700 }}>Card background</Typography>
+-							<Typography variant="subtitle2" sx={{ color: a.mutedTextColor }}>Author / secondary text</Typography>
++							<Typography sx={{ color: "var(--preview-text)", fontWeight: 700 }}>Card background</Typography>
++							<Typography variant="subtitle2" sx={{ color: "var(--preview-muted)" }}>Author / secondary text</Typography>
+ 						</Box>
+ 						<Box sx={{ display: "flex", gap: .5 }}>
+-							{icon("Reload icon", a.singleIconColor ? a.iconColor : a.reloadIconColor)}
+-							{icon("Live reload icon", a.singleIconColor ? a.iconColor : a.liveReloadIconColor)}
+-							{icon("Settings icon", a.singleIconColor ? a.iconColor : a.settingsIconColor)}
+-							{icon("Uninstall icon", a.singleIconColor ? a.iconColor : a.uninstallIconColor)}
+-						</Box>
+-					</Box>
+-					<Box sx={{ marginTop: 1, padding: 1, borderRadius: radius, background: a.innerBackground, border: `1px solid ${a.strongBorderColor}` }}>
+-						<Typography variant="subtitle2" sx={{ color: a.mutedTextColor }}>Inner background</Typography>
++							{icon("Reload icon", a.singleIconColor ? "var(--preview-icon-all)" : "var(--preview-icon-reload)")}
++							{icon("Live reload icon", a.singleIconColor ? "var(--preview-icon-all)" : "var(--preview-icon-live)")}
++							{icon("Settings icon", a.singleIconColor ? "var(--preview-icon-all)" : "var(--preview-icon-settings)")}
++							{icon("Uninstall icon", a.singleIconColor ? "var(--preview-icon-all)" : "var(--preview-icon-uninstall)")}
++						</Box>
++					</Box>
++					<Box sx={{ marginTop: 1, padding: 1, borderRadius: radius, background: "var(--preview-inner-bg)", border: "1px solid var(--preview-strong-border)" }}>
++						<Typography variant="subtitle2" sx={{ color: "var(--preview-muted)" }}>Inner background</Typography>
+ 						<Box sx={{ display: "flex", gap: 1, marginTop: .75 }}>
+-							<Box sx={{ flex: 1, height: 34, borderRadius: radius, background: a.controlBackground, border: `1px solid ${a.borderColor}`, display: "grid", alignItems: "center", paddingLeft: 1, color: a.mutedTextColor }}>Control background</Box>
+-							<Box sx={{ width: 64, height: 34, borderRadius: radius, background: a.controlBackground, border: `1px solid ${a.strongBorderColor}` }} />
++							<Box sx={{ flex: 1, height: 34, borderRadius: radius, background: "var(--preview-control-bg)", border: "1px solid var(--preview-border)", display: "grid", alignItems: "center", paddingLeft: 1, color: "var(--preview-muted)" }}>Control background</Box>
++							<Box sx={{ width: 64, height: 34, borderRadius: radius, background: "var(--preview-control-bg)", border: "1px solid var(--preview-strong-border)" }} />
+ 						</Box>
+ 					</Box>
+ 				</Box>
+ 			</Box>
+ 		</Box>
+ 	);
+-}
+-
++}));
+ export const Settings = React.memo(() => {
+ 	const saved = useLunaUiAppearance();
+ 	const [draft, setDraft] = React.useState<LunaUiAppearance>(() => ({ ...saved }));
+ 	const fileRef = React.useRef<HTMLInputElement>(null);
++	const previewRef = React.useRef<HTMLDivElement>(null);
++
++	const previewColor = React.useCallback((variable: string, value: string) => {
++		previewRef.current?.style.setProperty(variable, value);
++	}, []);
+ 
+ 	React.useEffect(() => {
+ 		setDraft({ ...saved });
+@@ -188,7 +228,7 @@
+ 							For images, 16:9 at 1920╨УтАФ1080 or larger is recommended. WebP/JPEG is preferable for smaller stored settings.
+ 						</Typography>
+ 						<Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 1 }}>
+-							<ColorField label="Page background" value={draft.pageBackground} onChange={(v) => updateDraft("pageBackground", v)} />
++							<ColorField label="Page background" value={draft.pageBackground} onChange={(v) => updateDraft("pageBackground", v)} previewVar="--preview-page-bg" onPreview={previewColor} />
+ 							<Box sx={{ display: "flex", gap: .75 }}>
+ 								<Button variant="outlined" size="small" sx={{ flex: 1 }} onClick={() => fileRef.current?.click()}>Choose image</Button>
+ 								{draft.pageBackgroundImage && <Button size="small" onClick={() => updateDraft("pageBackgroundImage", "")}>Clear</Button>}
+@@ -208,14 +248,14 @@
+ 					<Box>
+ 						<Typography variant="h8" sx={{ display: "block", marginBottom: 1 }}>Surfaces ╨▓╨ВтАЭ names match preview</Typography>
+ 						<Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 1 }}>
+-							<ColorField label="Section background" value={draft.shellBackground} onChange={(v) => updateDraft("shellBackground", v)} />
+-							<ColorField label="Card background" value={draft.cardBackground} onChange={(v) => updateDraft("cardBackground", v)} />
+-							<ColorField label="Inner background" value={draft.innerBackground} onChange={(v) => updateDraft("innerBackground", v)} />
+-							<ColorField label="Control background" value={draft.controlBackground} onChange={(v) => updateDraft("controlBackground", v)} />
+-							<ColorField label="Border color" value={draft.borderColor} onChange={(v) => updateDraft("borderColor", v)} />
+-							<ColorField label="Strong border color" value={draft.strongBorderColor} onChange={(v) => updateDraft("strongBorderColor", v)} />
+-							<ColorField label="Text color" value={draft.textColor} onChange={(v) => updateDraft("textColor", v)} />
+-							<ColorField label="Muted text" value={draft.mutedTextColor} onChange={(v) => updateDraft("mutedTextColor", v)} />
++							<ColorField label="Section background" value={draft.shellBackground} onChange={(v) => updateDraft("shellBackground", v)} previewVar="--preview-shell-bg" onPreview={previewColor} />
++							<ColorField label="Card background" value={draft.cardBackground} onChange={(v) => updateDraft("cardBackground", v)} previewVar="--preview-card-bg" onPreview={previewColor} />
++							<ColorField label="Inner background" value={draft.innerBackground} onChange={(v) => updateDraft("innerBackground", v)} previewVar="--preview-inner-bg" onPreview={previewColor} />
++							<ColorField label="Control background" value={draft.controlBackground} onChange={(v) => updateDraft("controlBackground", v)} previewVar="--preview-control-bg" onPreview={previewColor} />
++							<ColorField label="Border color" value={draft.borderColor} onChange={(v) => updateDraft("borderColor", v)} previewVar="--preview-border" onPreview={previewColor} />
++							<ColorField label="Strong border color" value={draft.strongBorderColor} onChange={(v) => updateDraft("strongBorderColor", v)} previewVar="--preview-strong-border" onPreview={previewColor} />
++							<ColorField label="Text color" value={draft.textColor} onChange={(v) => updateDraft("textColor", v)} previewVar="--preview-text" onPreview={previewColor} />
++							<ColorField label="Muted text" value={draft.mutedTextColor} onChange={(v) => updateDraft("mutedTextColor", v)} previewVar="--preview-muted" onPreview={previewColor} />
+ 							<CompactField label="Corner radius px" type="number" value={draft.borderRadius} onChange={(v) => updateDraft("borderRadius", Math.max(0, Number(v) || 0))} />
+ 							<CompactField label="Surface opacity %" type="number" value={draft.surfaceOpacity} onChange={(v) => updateDraft("surfaceOpacity", Math.max(0, Math.min(100, Number(v) || 0)))} />
+ 						</Box>
+@@ -227,13 +267,13 @@
+ 							<ToggleRow label="Hide author avatars" checked={draft.hideAuthorAvatars} onChange={(v) => updateDraft("hideAuthorAvatars", v)} />
+ 							<ToggleRow label="Use one icon color" checked={draft.singleIconColor} onChange={(v) => updateDraft("singleIconColor", v)} />
+ 							{draft.singleIconColor ? (
+-								<ColorField label="All action icons" value={draft.iconColor} onChange={(v) => updateDraft("iconColor", v)} />
++								<ColorField label="All action icons" value={draft.iconColor} onChange={(v) => updateDraft("iconColor", v)} previewVar="--preview-icon-all" onPreview={previewColor} />
+ 							) : (
+ 								<>
+-									<ColorField label="Reload icon" value={draft.reloadIconColor} onChange={(v) => updateDraft("reloadIconColor", v)} />
+-									<ColorField label="Live reload icon" value={draft.liveReloadIconColor} onChange={(v) => updateDraft("liveReloadIconColor", v)} />
+-									<ColorField label="Settings icon" value={draft.settingsIconColor} onChange={(v) => updateDraft("settingsIconColor", v)} />
+-									<ColorField label="Uninstall icon" value={draft.uninstallIconColor} onChange={(v) => updateDraft("uninstallIconColor", v)} />
++									<ColorField label="Reload icon" value={draft.reloadIconColor} onChange={(v) => updateDraft("reloadIconColor", v)} previewVar="--preview-icon-reload" onPreview={previewColor} />
++									<ColorField label="Live reload icon" value={draft.liveReloadIconColor} onChange={(v) => updateDraft("liveReloadIconColor", v)} previewVar="--preview-icon-live" onPreview={previewColor} />
++									<ColorField label="Settings icon" value={draft.settingsIconColor} onChange={(v) => updateDraft("settingsIconColor", v)} previewVar="--preview-icon-settings" onPreview={previewColor} />
++									<ColorField label="Uninstall icon" value={draft.uninstallIconColor} onChange={(v) => updateDraft("uninstallIconColor", v)} previewVar="--preview-icon-uninstall" onPreview={previewColor} />
+ 								</>
+ 							)}
+ 						</Box>
+@@ -246,7 +286,7 @@
+ 						{dirty && <Typography variant="subtitle2" sx={{ opacity: .7, marginLeft: .5 }}>Unsaved changes</Typography>}
+ 					</Box>
+ 				</Stack>
+-				<AppearancePreview a={draft} />
++				<AppearancePreview ref={previewRef} a={draft} />
+ 			</Box>
+ 		</LunaSettings>
+ 	);

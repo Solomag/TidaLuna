@@ -1,0 +1,18 @@
+﻿build/buildPlugins.ts:17:await writeFile(join(process.cwd(), "./dist/store.json"), JSON.stringify(pkg));
+build/index.ts:32:	const entryPoint = path.join(pluginPath, pluginPackage.main ?? exportsValue ?? "index.mjs");
+build/index.ts:39:		outfile: `./dist/${safeName}.mjs`,
+build/plugins/fileUrl.ts:11:// https://github.com/Vendicated/Vencord/blob/main/scripts/build/common.mjs
+build/plugins/writeBundlePlugin.ts:18:				if (pluginPackagePath && !writePackageJson && outputFile.path.endsWith(".mjs")) {
+build/plugins/writeBundlePlugin.ts:21:						outputFile.path.replace(/\.mjs$/, ".json"),
+esbuild.config.ts:11:			await writeFile("./dist/package.json", await readFile("./package.json", "utf-8"));
+esbuild.config.ts:20:		outfile: "dist/injector.mjs",
+esbuild.config.ts:30:		outfile: "dist/preload.mjs",
+esbuild.config.ts:40:		outfile: "dist/luna.mjs",
+native/injector.ts:76:	if (fileName.endsWith(".mjs")) {
+native/injector.ts:91:const lunaBundle = bundleFile("https://luna/luna.mjs").then(([content]) => content);
+native/injector.ts:207:				options.webPreferences.preload = path.join(bundleDir, "preload.mjs");
+native/injector.ts:210:				const lunaPreload = path.join(bundleDir, "preload.mjs");
+package.json:15:  "main": "./injector.mjs",
+render/src/LunaPlugin.ts:60:		return ftch.text(`${url}.mjs`).catch((err) => {
+render/src/LunaPlugin.ts:116:		storeInit.url = storeInit.url.replace(/(\.mjs|\.json|\.mjs.map)$/, "");
+render/src/LunaPlugin.ts:427:			this.package.code ??= `${await LunaPlugin.fetchCode(this.url)}\n//# sourceURL=${this.url}.mjs`;
