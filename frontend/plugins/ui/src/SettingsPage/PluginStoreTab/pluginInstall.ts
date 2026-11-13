@@ -7,7 +7,7 @@
 import { LunaPlugin, Tracer } from "@luna/core";
 import type { LunaPackageDependency } from "@luna/core";
 import { confirm } from "../../helpers/confirm";
-import { addToStores, storeUrls } from "./storeState";
+import { addToStores, isStoreAdded as isStoreListed } from "./storeState";
 
 type StorePackage = { plugins: string[] };
 
@@ -15,7 +15,7 @@ const trace = Tracer("[@luna/ui][PluginInstall]", null).trace;
 
 const normalizeStoreUrl = (storeUrl: string) => storeUrl.replace(/\/store\.json$/i, "");
 const normalizePluginUrl = (pluginUrl: string) => pluginUrl.replace(/(\.mjs|\.json|\.mjs\.map)$/i, "");
-const isStoreAdded = (storeUrl: string) => storeUrls.includes(normalizeStoreUrl(storeUrl));
+const isStoreAdded = (storeUrl: string) => isStoreListed(normalizeStoreUrl(storeUrl));
 const isBuiltInDevStore = (storeUrl: string) => /^https?:\/\/(127\.0\.0\.1|localhost):3000$/i.test(normalizeStoreUrl(storeUrl));
 const isFromDevStore = (plugin: LunaPlugin) => /^https?:\/\/(127\.0\.0\.1|localhost):3000\//i.test(plugin.url);
 const getDependencyStoreUrl = (dependency: LunaPackageDependency, dependantPlugin: LunaPlugin) => {

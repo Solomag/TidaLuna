@@ -14,7 +14,7 @@ mock.module("@luna/core", () => ({
 	Tracer: () => ({ trace: { msg: { log: quiet, err: Object.assign(quiet, { withContext: () => quiet }) } } }),
 }));
 mock.module("../plugins/ui/src/helpers/confirm", () => ({ confirm: async () => {} }));
-mock.module("../plugins/ui/src/SettingsPage/PluginStoreTab/storeState", () => ({ addToStores: quiet, storeUrls: [] }));
+mock.module("../plugins/ui/src/SettingsPage/PluginStoreTab/storeState", () => ({ addToStores: quiet, isStoreAdded: () => false }));
 
 const { installPluginWithLibraries } = await import("../plugins/ui/src/SettingsPage/PluginStoreTab/pluginInstall");
 
