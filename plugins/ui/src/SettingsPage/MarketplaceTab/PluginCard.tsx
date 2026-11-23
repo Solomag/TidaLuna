@@ -29,8 +29,30 @@ const NativeChip = ({ native }: { native: NativeInfo }) => {
 					: "No native module registration found in the built code"
 			}
 		>
-			<Chip size="small" variant="outlined" color={native ? "warning" : "default"} label={native ? "native" : "no native"} />
+			<Chip size="small" variant={native ? "filled" : "outlined"} color={native ? "error" : "default"} label={native ? "native" : "no native"} />
 		</Tooltip>
+	);
+};
+
+/** Optional `preview` in a plugin's package.json: an https image shown on top of its card */
+const previewOf = (pkg?: PluginPackage) => {
+	const preview = (pkg as { preview?: unknown } | undefined)?.preview;
+	return typeof preview === "string" && URL.parse(preview)?.protocol === "https:" ? preview : undefined;
+};
+
+const Preview = ({ src }: { src: string }) => {
+	const [failed, setFailed] = React.useState(false);
+	if (failed) return null;
+	return (
+		<Box
+			component="img"
+			src={src}
+			alt=""
+			loading="lazy"
+			referrerPolicy="no-referrer"
+			onError={() => setFailed(true)}
+			sx={{ width: "100%", aspectRatio: "16 / 9", objectFit: "cover", borderRadius: 1, backgroundColor: "rgba(255, 255, 255, 0.06)" }}
+		/>
 	);
 };
 
@@ -110,6 +132,7 @@ export const PluginCard = React.memo(
 		const pkg = plugin.package;
 		const native: NativeInfo = installed ? hasNative(plugin.code) : undefined;
 		const hasSettings = installed && plugin.exports?.Settings !== undefined;
+		const preview = previewOf(pkg);
 
 		const toggleInstall = async () => {
 			setBusy(true);
@@ -132,6 +155,7 @@ export const PluginCard = React.memo(
 					minHeight: 160,
 				}}
 			>
+				{preview && <Preview key={preview} src={preview} />}
 				<Stack direction="row" spacing={1} sx={{ alignItems: "baseline" }}>
 					<Typography variant="subtitle1" sx={{ fontWeight: 600, lineHeight: 1.2, overflowWrap: "anywhere" }} children={plugin.name} />
 					{pkg?.version && <Typography variant="caption" sx={{ opacity: 0.7 }} children={pkg.version} />}
@@ -151,7 +175,8 @@ export const PluginCard = React.memo(
 				<Stack direction="row" sx={{ flexWrap: "wrap", gap: 0.5 }}>
 					{installed && <Chip size="small" variant="outlined" label="installed" sx={{ color: green[300], borderColor: green[300] }} />}
 					{update && <Chip size="small" color="info" label={`update: ${update.version ?? "new build"}`} />}
-					<NativeChip native={native} />
+					{/* Only the risky case gets a tag, like Spicetify's "external JS" */}
+					{native === true && <NativeChip native />}
 					<Chip size="small" variant="outlined" sx={{ opacity: 0.7, maxWidth: 160 }} label={repository?.name ?? "from url"} />
 				</Stack>
 				{confirming && update ? (
