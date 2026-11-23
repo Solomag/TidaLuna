@@ -44,7 +44,7 @@ const fetchStore = async (url: string): Promise<StoreInfo> => {
 	}
 };
 
-// Stores load once per visit of Luna Settings, the store's reload button fetches it again
+// Stores are cached until the Plugins tab is switched back to (see useStores), the store's reload button fetches one again
 const cache = new Map<string, Promise<StoreInfo>>();
 const storesVersion = new Signal(0);
 const loadStore = (url: string) => {
