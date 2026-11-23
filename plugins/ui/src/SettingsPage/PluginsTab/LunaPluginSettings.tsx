@@ -13,6 +13,9 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 
 import { LunaSwitch, LunaTrashButton, SpinningButton } from "../../components";
+import { UpdateConfirm } from "../MarketplaceTab/UpdateConfirm";
+import { displayName } from "../names";
+import { cardSx, pillButton } from "../styles";
 import { LiveReloadToggle } from "./LiveReloadToggle";
 import { LunaPluginHeader } from "./LunaPluginHeader";
 
@@ -49,7 +52,14 @@ class PluginSettingsErrorBoundary extends React.Component<{ name: string; childr
 	}
 }
 
-export const LunaPluginSettings = React.memo(({ plugin }: { plugin: LunaPlugin }) => {
+type LunaPluginSettingsProps = {
+	plugin: LunaPlugin;
+	/** Newer package found by an update check */
+	update?: PluginPackage;
+	onUpdated?: (url: string) => void;
+};
+
+export const LunaPluginSettings = React.memo(({ plugin, update, onUpdated }: LunaPluginSettingsProps) => {
 	// Have to wrap in function call as Settings is a functional component
 	// A new card can mount before install() finishes enabling the plugin.
 	const enabled = React.useSyncExternalStore(plugin.onSetEnabled, () => Boolean(plugin.enabled));
@@ -59,6 +69,7 @@ export const LunaPluginSettings = React.memo(({ plugin }: { plugin: LunaPlugin }
 	const [installed, setInstalled] = React.useState(plugin.installed);
 	const [hideSettings, setHideSettings] = React.useState(plugin.store.hideSettings);
 	const [collapsed, setCollapsed] = React.useState(false);
+	const [confirming, setConfirming] = React.useState(false);
 
 	const [pkg, setPackage] = React.useState<PluginPackage>(obyStore.unwrap(plugin.store.package));
 
@@ -105,17 +116,17 @@ export const LunaPluginSettings = React.memo(({ plugin }: { plugin: LunaPlugin }
 	return (
 		<Stack
 			spacing={1}
+			data-luna-plugin-card={name}
 			sx={{
-				borderRadius: 3,
-				backgroundColor: "rgba(0, 0, 0, 0.10)",
-				boxShadow: loadError ? "0 0 10px rgba(255, 0, 0, 0.70)" : "none",
-				padding: 2,
-				paddingTop: 1,
-				paddingBottom: hasSettings || hideSettings ? 2 : 1,
+				...cardSx,
+				borderColor: loadError ? "rgba(229, 115, 115, 0.7)" : update ? "rgba(144, 202, 249, 0.6)" : cardSx.borderColor,
+				paddingTop: 1.25,
+				paddingBottom: hasSettings || hideSettings ? 2 : 1.25,
 			}}
 		>
 			<LunaPluginHeader
-				name={name}
+				name={isCore ? name : displayName(name)}
+				title={name}
 				version={version}
 				link={link}
 				loadError={loadError}
@@ -157,6 +168,25 @@ export const LunaPluginSettings = React.memo(({ plugin }: { plugin: LunaPlugin }
 					</>
 				}
 			/>
+			{update &&
+				(confirming ? (
+					<UpdateConfirm
+						plugin={plugin}
+						update={update}
+						onCancel={() => setConfirming(false)}
+						onDone={() => {
+							setConfirming(false);
+							onUpdated?.(plugin.url);
+						}}
+					/>
+				) : (
+					<Stack direction="row" sx={{ alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+						<Typography variant="body2" sx={{ color: "info.light" }}>
+							Update available: {pkg.version ?? "?"} → <b>{update.version ?? "new build"}</b>
+						</Typography>
+						<Button size="small" variant="contained" color="info" sx={pillButton} onClick={() => setConfirming(true)} children="Update…" />
+					</Stack>
+				))}
 			{hasSettings && !hideSettings && (
 				<div hidden={collapsed}>
 					<PluginSettingsErrorBoundary name={name}>

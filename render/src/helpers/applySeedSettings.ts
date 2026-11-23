@@ -150,7 +150,7 @@ async function installPlugins(missing: Map<string, string>, storeUrls: string[])
 	else await seedCache.set("notFound", notFoundKey());
 	if (missing.size !== 0) {
 		trace.msg.err(
-			`luna-settings.json: plugin(s) ${[...missing.values()].join(", ")} not found in any store. Use the name shown in the Plugin Store and declare its store.`,
+			`luna-settings.json: plugin(s) ${[...missing.values()].join(", ")} not found in any store. Use the name shown in the Marketplace and declare its store.`,
 		);
 	}
 }

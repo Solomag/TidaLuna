@@ -1,15 +1,6 @@
-import React, { useCallback, useEffect, useState } from "react";
-
-import { store as obyStore } from "oby";
-
 import { LunaPlugin, ReactiveStore } from "@luna/core";
 
-import Stack from "@mui/material/Stack";
-import TextField from "@mui/material/TextField";
-
-import { InstallFromUrl } from "./InstallFromUrl";
-import { LunaStore } from "./LunaStore";
-
+/** Plugin repositories (store.json urls) the user has added */
 const pluginStores = ReactiveStore.getStore("@luna/pluginStores");
 export const storeUrls = await pluginStores.getReactive<string[]>("storeUrls", []);
 export const addToStores = (url: string) => {
@@ -35,7 +26,10 @@ export const replaceStore = async (legacyUrls: string[], newUrl: string) => {
 // Store moved? replaceStore then addToStores <3
 // TODO: Abstract this to a git repo
 addToStores("https://github.com/SuperslowJelly/TIDAL-Clear-Coat/releases/download/latest/store.json");
-await replaceStore(["https://github.com/meowarex/TidalLuna-Plugins/releases/download/latest/store.json"], "https://release.radiant-lyrics.org/store.json");
+await replaceStore(
+	["https://github.com/meowarex/TidalLuna-Plugins/releases/download/latest/store.json"],
+	"https://release.radiant-lyrics.org/store.json",
+);
 addToStores("https://release.radiant-lyrics.org/store.json");
 addToStores("https://github.com/wont-stream/lunar/releases/download/dev/store.json");
 addToStores("https://github.com/jxnxsdev/luna-plugins/releases/download/latest/store.json");
@@ -63,35 +57,5 @@ addToStores("https://github.com/Drousis3/Tidaluna-nice-to-have-plugins/releases/
 addToStores("https://github.com/pimull/tidaluna-album-editions/releases/latest/download/store.json");
 addToStores("https://github.com/Solomag/lunatic-ui/releases/download/latest/store.json");
 addToStores("https://github.com/Fuchs-Fox/lunajam/releases/download/latest/store.json");
-
-export const PluginStoreTab = React.memo(() => {
-	const [_storeUrls, setPluginStores] = useState<string[]>(obyStore.unwrap(storeUrls));
-	const [searchQuery, setSearchQuery] = useState("");
-
-	useEffect(() => obyStore.on(storeUrls, () => setPluginStores([...obyStore.unwrap(storeUrls)])), []);
-	const onRemove = useCallback((storeUrl: string) => {
-		const index = storeUrls.indexOf(storeUrl);
-		if (index > -1) storeUrls.splice(index, 1);
-	}, []);
-
-	return (
-		<Stack spacing={2}>
-			<Stack direction="row" spacing={2}>
-				<InstallFromUrl />
-				<TextField
-					fullWidth
-					size="small"
-					placeholder="Search plugins..."
-					value={searchQuery}
-					onChange={(e) => setSearchQuery(e.target.value)}
-				/>
-			</Stack>
-			<LunaStore url={"http://127.0.0.1:3000"} onRemove={() => {}} searchQuery={searchQuery} />
-			{_storeUrls.map((store) => (
-				<LunaStore key={store} url={store} onRemove={() => onRemove(store)} searchQuery={searchQuery} />
-			))}
-		</Stack>
-	);
-});
 
 export const { normalizeStoreUrl } = LunaPlugin;

@@ -5,6 +5,8 @@ import { LunaSettings, LunaSwitchSetting, SpinningButton } from "../../component
 import Grid from "@mui/material/Grid";
 
 import SettingsIcon from "@mui/icons-material/Settings";
+
+import { hairline, surface } from "../styles";
 import { grey } from "@mui/material/colors";
 
 export const LunaFeatureFlags = React.memo(() => {
@@ -32,7 +34,7 @@ export const LunaFeatureFlags = React.memo(() => {
 							<Grid
 								key={flag.name}
 								size={6}
-								sx={{ borderRadius: 4, backgroundColor: "rgba(0, 0, 0, 0.20)", boxShadow: 2, paddingLeft: 1.5 }}
+								sx={{ borderRadius: 2, backgroundColor: surface, border: `1px solid ${hairline}`, paddingLeft: 1.5 }}
 								children={
 									<LunaSwitchSetting
 										disabled={flag.type !== "BOOLEAN"}

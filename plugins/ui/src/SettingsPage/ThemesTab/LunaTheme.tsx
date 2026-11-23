@@ -11,10 +11,13 @@ import { StyleTag } from "@luna/lib";
 import { unloads } from "../../index.safe";
 import { LunaPluginHeader } from "../PluginsTab/LunaPluginHeader";
 import { themes, themeStyles } from "../Storage";
+import { cardSx } from "../styles";
 
 export type LunaThemeStorage = {
 	enabled: boolean;
 	css?: string;
+	/** Name from the repository listing it was installed from */
+	name?: string;
 };
 
 type LunaThemeManifest = { name?: string; description?: string; author?: string };
@@ -28,6 +31,12 @@ const parseManifest = (css?: string): LunaThemeManifest | undefined => {
 	}
 };
 
+/** Last path segment of the url without query or hash, the whole url when there is none */
+const fileName = (url: string) => {
+	const path = URL.parse(url)?.pathname ?? url;
+	return path.slice(path.lastIndexOf("/") + 1) || url;
+};
+
 export const LunaTheme = React.memo(({ theme, url, uninstall }: { theme: LunaThemeStorage; url: string; uninstall: VoidFn }) => {
 	const [enabled, setEnabled] = React.useState(theme.enabled);
 	// Sync enabled state when prop changes (e.g., emergency disable shortcut)
@@ -37,7 +46,8 @@ export const LunaTheme = React.memo(({ theme, url, uninstall }: { theme: LunaThe
 	const [themeStyle] = React.useState(() => themeStyles[url] ?? (themeStyles[url] = new StyleTag(url, unloads)));
 	// Neptune theme manifest support
 	const [manifest, setManifest] = React.useState(() => parseManifest(theme.css));
-	const name = manifest?.name ?? url;
+	// No manifest: the css file name reads better than the whole url
+	const name = manifest?.name ?? theme.name ?? fileName(url);
 
 	const toggleEnabled = React.useCallback((_: unknown, checked: boolean) => {
 		setEnabled((themes[url].enabled = checked));
@@ -64,16 +74,7 @@ export const LunaTheme = React.memo(({ theme, url, uninstall }: { theme: LunaThe
 	}, []);
 
 	return (
-		<Stack
-			spacing={1}
-			sx={{
-				borderRadius: 3,
-				backgroundColor: "rgba(0, 0, 0, 0.10)",
-				padding: 2,
-				paddingTop: 1,
-				paddingBottom: 1,
-			}}
-		>
+		<Stack spacing={1} data-luna-theme-card={url} sx={{ ...cardSx, paddingTop: 1.25, paddingBottom: 1.25 }}>
 			<LunaPluginHeader
 				name={name}
 				desc={manifest?.description}
@@ -86,7 +87,7 @@ export const LunaTheme = React.memo(({ theme, url, uninstall }: { theme: LunaThe
 							children={<LunaSwitch checked={enabled} loading={loading} onChange={toggleEnabled} />}
 						/>
 						<SpinningButton title="Reload theme" spin={loading} disabled={loading} onClick={loadCSS} />
-						<LunaTrashButton title="Uninstall plugin" onClick={uninstall} />
+						<LunaTrashButton title="Uninstall theme" onClick={uninstall} />
 					</>
 				}
 			/>

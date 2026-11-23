@@ -19,10 +19,15 @@ export const GitHubContributors = React.memo(() => {
 	React.useEffect(() => {
 		const fetchContributors = async () => {
 			setLoading(true);
-			const data = await ftch.json<Contributor[]>(`https://api.github.com/repos/Inrixia/TidaLuna/contributors?per_page=100&page=${page}`);
-			setContributors((prev) => [...prev, ...data]);
-			setHasMore(data.length === 100);
-			setLoading(false);
+			try {
+				const data = await ftch.json<Contributor[]>(`https://api.github.com/repos/Inrixia/TidaLuna/contributors?per_page=100&page=${page}`);
+				setContributors((prev) => [...prev, ...data]);
+				setHasMore(data.length === 100);
+			} catch {
+				setHasMore(false);
+			} finally {
+				setLoading(false);
+			}
 		};
 		if (hasMore) fetchContributors();
 	}, [page]);
@@ -49,6 +54,7 @@ export const GitHubContributors = React.memo(() => {
 					avatarUrl: avatar_url,
 					url: html_url,
 				}))}
+				incomplete={hasMore}
 			/>
 			<div ref={loaderRef} />
 			{loading && <div>Loading contributors…</div>}

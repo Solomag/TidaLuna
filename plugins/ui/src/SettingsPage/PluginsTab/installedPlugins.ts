@@ -1,11 +1,11 @@
 import { effect } from "oby";
 
-const byName = new Intl.Collator(undefined, { sensitivity: "base" });
+import { compareNames } from "../names";
 
 export function installedPlugins<T extends { installed: boolean; name: string }>(plugins: T[], core: ReadonlySet<string>, descending: boolean) {
 	return plugins
 		.filter((plugin) => plugin.installed && !core.has(plugin.name))
-		.sort((a, b) => (descending ? byName.compare(b.name, a.name) : byName.compare(a.name, b.name)));
+		.sort((a, b) => (descending ? compareNames(b.name, a.name) : compareNames(a.name, b.name)));
 }
 
 export function matchingPluginNames<T extends { name: string }>(plugins: T[], query: string) {

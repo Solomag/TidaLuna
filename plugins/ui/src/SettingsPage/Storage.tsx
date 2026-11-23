@@ -9,14 +9,14 @@ import { StyleTag } from "@luna/lib";
 import { Messager } from "@luna/core";
 import type { LunaThemeStorage } from "./ThemesTab/LunaTheme";
 import { unloads } from "../index.safe";
-import { addToStores } from "./PluginStoreTab";
+import { addToStores } from "./stores";
 
 const lunaStorage = ReactiveStore.getStore("@luna/storage");
 
 export const themes = await lunaStorage.getReactive<Record<string, LunaThemeStorage>>("themes", {});
-export const addToThemes = async (url: string) => {
+export const addToThemes = async (url: string, name?: string) => {
 	if (url in themes) return false;
-	const theme = (themes[url] ??= { enabled: true });
+	const theme = (themes[url] ??= name ? { enabled: true, name } : { enabled: true });
 	// Create StyleTag and load CSS immediately
 	const styleTag = (themeStyles[url] = new StyleTag(url, unloads));
 	try {
@@ -28,6 +28,13 @@ export const addToThemes = async (url: string) => {
 		console.error("[Themes] Failed to load theme:", url, e);
 	}
 	return theme;
+};
+
+/** Turns the theme off and forgets it */
+export const removeTheme = (url: string) => {
+	themeStyles[url]?.remove();
+	delete themeStyles[url];
+	delete themes[url];
 };
 
 // Apply enabled themes on startup

@@ -15,8 +15,13 @@ export const GitHubSponsors = React.memo(() => {
 	React.useEffect(() => {
 		const fetchSponsors = async () => {
 			setLoading(true);
-			setSponsors(await ftch.json<Sponsor[]>(`https://sponsors.hug.rip`));
-			setLoading(false);
+			try {
+				setSponsors(await ftch.json<Sponsor[]>(`https://sponsors.hug.rip`));
+			} catch {
+				// Offline: the section stays empty
+			} finally {
+				setLoading(false);
+			}
 		};
 		fetchSponsors();
 	}, []);

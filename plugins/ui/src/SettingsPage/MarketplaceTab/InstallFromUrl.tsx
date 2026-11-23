@@ -6,7 +6,8 @@ import { debounce } from "@inrixia/helpers";
 import { LunaPlugin } from "@luna/core";
 
 import { Messager } from "@luna/core";
-import { addToStores } from ".";
+import { addToThemes } from "../Storage";
+import { addToStores } from "../stores";
 
 const successSx = {
 	"& .MuiOutlinedInput-root:hover:not(.Mui-focused) .MuiOutlinedInput-notchedOutline": {
@@ -41,6 +42,10 @@ export const InstallFromUrl = React.memo(() => {
 			if (url.endsWith("/store.json")) {
 				if (addToStores(url) === false) return setErr("Store already added");
 				successMessage = `Added store ${url}!`;
+			} else if (URL.parse(url)?.pathname.endsWith(".css")) {
+				// The Marketplace lists themes too, so a theme url works here like in the Themes tab
+				if ((await addToThemes(url)) === false) return setErr("Theme already installed");
+				successMessage = `Installed theme ${url}!`;
 			} else {
 				const plugin = await LunaPlugin.fromStorage({ url });
 				if (!plugin.installed) await plugin.install();

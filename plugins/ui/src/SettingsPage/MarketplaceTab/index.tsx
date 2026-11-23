@@ -1,7 +1,5 @@
 import React from "react";
 
-import type { LunaPlugin } from "@luna/core";
-
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import InputAdornment from "@mui/material/InputAdornment";
@@ -13,126 +11,156 @@ import Typography from "@mui/material/Typography";
 
 import SearchIcon from "@mui/icons-material/Search";
 import StorageIcon from "@mui/icons-material/Storage";
+import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 
-import { SpinningButton } from "../../components";
-import { LunaPluginSettings } from "../PluginsTab/LunaPluginSettings";
-import { useCatalog, useInstalledVersion, useRepositoryUrls, useUpdates, withInstalled, type CatalogEntry } from "./catalog";
+import { compareNames, displayName } from "../names";
+import { PageHeader } from "../PageHeader";
+import { darkField, softButton } from "../styles";
+import { marketplaceView, useCatalog, useInstalledThemes, useInstalledVersion, useRepositoryUrls, withInstalled } from "./catalog";
 import { useDownloads } from "./downloads";
 import { PluginCard } from "./PluginCard";
 import { Repositories } from "./Repositories";
-import { darkField, hairline, softButton, surface } from "./styles";
+import { ThemeCard } from "./ThemeCard";
 
-type Filter = "all" | "installed" | "available" | "updates";
 type Sort = "downloads" | "name";
+type View = typeof marketplaceView._;
+const allRepositories = "*";
+/** Repository filter value for plugins installed from a plain url */
+const fromUrl = "";
 
-/** How many of the most downloaded, not installed plugins are shown on top */
-const popularCount = 3;
-
-const byName = new Intl.Collator(undefined, { sensitivity: "base" });
-const authorName = (author: unknown) => (typeof author === "string" ? author : ((author as { name?: string } | undefined)?.name ?? ""));
-const searchText = ({ plugin, repository }: CatalogEntry) => {
-	const desc = plugin.package?.description;
-	return [plugin.name, typeof desc === "string" ? desc : "", authorName(plugin.package?.author), repository?.name ?? ""]
-		.join(" ")
-		.toLocaleLowerCase();
+/** What the grid needs from a plugin or a theme */
+type Item = {
+	key: string;
+	name: string;
+	search: string;
+	repositoryUrl: string;
+	installed: boolean;
+	card: (onPickRepository: (url: string) => void) => React.ReactNode;
 };
 
-const filterNames: Record<Filter, string> = { all: "All plugins", installed: "Installed", available: "Available", updates: "Updates" };
-
-const Section = ({ title, hint }: { title: string; hint?: string }) => (
-	<Stack direction="row" sx={{ alignItems: "baseline", gap: 1, minWidth: 0 }}>
-		<Typography variant="h6" noWrap title={title} sx={{ fontWeight: 700, fontSize: "1.15rem", minWidth: 0, flexShrink: hint ? 0 : 1 }} children={title} />
-		{hint && <Typography variant="body2" noWrap sx={{ color: "text.secondary", minWidth: 0 }} children={hint} />}
-	</Stack>
-);
+const authorName = (author: unknown) => (typeof author === "string" ? author : ((author as { name?: string } | undefined)?.name ?? ""));
+const searchText = (...parts: unknown[]) =>
+	parts
+		.filter((part) => typeof part === "string")
+		.join(" ")
+		.toLocaleLowerCase();
 
 /**
- * Mock of a single plugins page: installed + available plugins in one grid, repositories (former stores) and updates on demand.
- * Uses the existing stores/plugins data as is.
+ * Mock of a single repository page (replaces the Plugin Store tab): every plugin, or every theme, from every repository in one grid.
+ * Installed plugins, their settings and updates live in the Plugins tab, installed themes in the Themes tab.
  */
 export const MarketplaceTab = React.memo(() => {
 	const urls = useRepositoryUrls();
 	const { repositories, entries: listed, loading } = useCatalog(urls);
 	const installedVersion = useInstalledVersion();
 	const entries = React.useMemo(() => withInstalled(listed), [listed, installedVersion]);
-	const { updates, checking, check, applied } = useUpdates(entries);
+	const installedThemes = useInstalledThemes();
 	const downloads = useDownloads(repositories);
 
+	const [view, setView] = React.useState<View>(marketplaceView._);
+	React.useEffect(() => {
+		const unload = marketplaceView.onValue(setView);
+		return () => void unload();
+	}, []);
 	const [query, setQuery] = React.useState("");
-	const [filter, setFilter] = React.useState<Filter>("all");
+	const [hideInstalled, setHideInstalled] = React.useState(false);
+	const [repository, setRepository] = React.useState(allRepositories);
 	const [sort, setSort] = React.useState<Sort>("downloads");
 	const [showRepos, setShowRepos] = React.useState(false);
-	const [settingsFor, setSettingsFor] = React.useState<LunaPlugin>();
-	if (settingsFor !== undefined && !settingsFor.installed) setSettingsFor(undefined);
-	const settingsRef = React.useRef<HTMLDivElement>(null);
-	React.useEffect(() => {
-		if (settingsFor !== undefined) settingsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-	}, [settingsFor]);
+
+	const items: Item[] =
+		view === "plugins"
+			? entries.map(({ plugin, repository }) => ({
+					key: plugin.url,
+					name: plugin.name,
+					search: searchText(displayName(plugin.name), plugin.package?.description, authorName(plugin.package?.author), repository?.name),
+					repositoryUrl: repository?.url ?? fromUrl,
+					installed: plugin.installed,
+					card: (onPick) => (
+						<PluginCard
+							key={plugin.url}
+							entry={{ plugin, repository }}
+							installed={plugin.installed}
+							downloads={downloads.get(plugin.url)}
+							onPickRepository={onPick}
+						/>
+					),
+				}))
+			: repositories.flatMap((repo) =>
+					repo.themes.map((theme) => ({
+						key: theme.url,
+						name: theme.name,
+						search: searchText(theme.name, theme.description, authorName(theme.author), repo.name),
+						repositoryUrl: repo.url,
+						installed: installedThemes.has(theme.url),
+						card: (onPick) => (
+							<ThemeCard
+								key={theme.url}
+								theme={theme}
+								installed={installedThemes.has(theme.url)}
+								downloads={downloads.get(theme.url)}
+								onPickRepository={onPick}
+							/>
+						),
+					})),
+				);
+	const noun = view === "plugins" ? "plugins" : "themes";
+	const countOf = (repo: (typeof repositories)[number]) => (view === "plugins" ? repo.plugins.length : repo.themes.length);
+
+	const hasFromUrl = items.some((item) => item.repositoryUrl === fromUrl);
+	// A removed repository (or one without anything in this view) can't stay selected
+	const picked =
+		repository === allRepositories ||
+		(repository === fromUrl && hasFromUrl) ||
+		repositories.some((repo) => repo.url === repository && countOf(repo) > 0)
+			? repository
+			: allRepositories;
+	const pickedName = picked === fromUrl ? "Installed from url" : repositories.find((repo) => repo.url === picked)?.name;
+	const pickRepository = React.useCallback((url: string) => setRepository(url), []);
 
 	const search = query.trim().toLocaleLowerCase();
-	const downloadsOf = (entry: CatalogEntry) => downloads.get(entry.plugin.url) ?? -1;
-	// Best plugins in view: the most downloaded ones not installed yet, on the unfiltered page only
-	const popular =
-		filter === "all" && search === "" && downloads.size
-			? entries
-					.filter((entry) => !entry.plugin.installed && downloadsOf(entry) > 0)
-					.sort((a, b) => downloadsOf(b) - downloadsOf(a))
-					.slice(0, popularCount)
-			: [];
-	const visible = entries
-		.filter((entry) => {
-			const installed = entry.plugin.installed;
-			if (filter === "installed" && !installed) return false;
-			if (filter === "available" && installed) return false;
-			if (filter === "updates" && !updates.has(entry.plugin.url)) return false;
-			if (popular.includes(entry)) return false;
-			return search === "" || searchText(entry).includes(search);
+	const downloadsOf = (item: Item) => downloads.get(item.key) ?? -1;
+	const visible = items
+		.filter((item) => {
+			if (hideInstalled && item.installed) return false;
+			if (picked !== allRepositories && item.repositoryUrl !== picked) return false;
+			return search === "" || item.search.includes(search);
 		})
-		// Updates first, then installed, then by downloads or name
-		.sort(
-			(a, b) =>
-				Number(updates.has(b.plugin.url)) - Number(updates.has(a.plugin.url)) ||
-				Number(!!b.plugin.installed) - Number(!!a.plugin.installed) ||
-				(sort === "downloads" ? downloadsOf(b) - downloadsOf(a) : 0) ||
-				byName.compare(a.plugin.name, b.plugin.name),
-		);
-	const card = (entry: CatalogEntry) => (
-		<PluginCard
-			key={entry.plugin.url}
-			entry={entry}
-			installed={entry.plugin.installed}
-			update={updates.get(entry.plugin.url)}
-			onUpdated={applied}
-			onOpenSettings={setSettingsFor}
-		/>
-	);
-	const grid = { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: 2 };
-	const installedCount = entries.filter((entry) => entry.plugin.installed).length;
-	const counts: Record<Filter, number> = {
-		all: entries.length,
-		installed: installedCount,
-		available: entries.length - installedCount,
-		updates: updates.size,
-	};
+		.sort((a, b) => (sort === "downloads" ? downloadsOf(b) - downloadsOf(a) : 0) || compareNames(a.name, b.name));
+
+	const scope = picked === allRepositories ? undefined : (pickedName ?? "Unknown repository");
+	const heading = search ? `Results for “${query.trim()}”${scope ? ` in ${scope}` : ""}` : (scope ?? `All ${noun}`);
+	const listing = repositories.filter((repo) => !repo.error && countOf(repo) > 0);
 
 	return (
 		<Stack spacing={2.5} sx={{ paddingBottom: 4 }}>
-			<Stack spacing={0.25}>
-				<Typography variant="h5" sx={{ fontWeight: 700 }} children="Marketplace" />
-				<Typography variant="body2" sx={{ color: "text.secondary" }}>
-					{loading ? "Loading repositories…" : `${entries.length} plugins from ${repositories.length} repositories`}
-				</Typography>
+			<PageHeader
+				title="Marketplace"
+				subtitle={loading ? "Loading repositories…" : `${items.length} ${noun} from ${listing.length} of ${repositories.length} repositories`}
+			/>
+			<Stack direction="row" role="group" aria-label="Show" sx={{ gap: 1 }}>
+				{(["plugins", "themes"] as const).map((value) => (
+					<Button
+						key={value}
+						size="small"
+						aria-pressed={view === value}
+						sx={softButton(view === value)}
+						onClick={() => (marketplaceView._ = value)}
+						children={value === "plugins" ? "Plugins" : "Themes"}
+					/>
+				))}
 			</Stack>
 			<Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
 				<TextField
 					fullWidth
 					size="small"
 					type="search"
-					placeholder="Search plugins, authors, repositories"
+					placeholder={`Search ${noun}, authors, repositories`}
 					sx={darkField}
 					value={query}
 					onChange={(event) => setQuery(event.target.value)}
 					slotProps={{
+						htmlInput: { "aria-label": `Search ${noun}` },
 						input: {
 							startAdornment: (
 								<InputAdornment position="start">
@@ -142,12 +170,11 @@ export const MarketplaceTab = React.memo(() => {
 						},
 					}}
 				/>
-				<SpinningButton title="Check for updates" spin={checking} disabled={checking || loading} onClick={check} />
 				<Button
 					size="small"
 					startIcon={<StorageIcon />}
 					aria-expanded={showRepos}
-					aria-label={`Repositories (${repositories.length})`}
+					aria-label={`Manage repositories (${repositories.length})`}
 					sx={softButton(showRepos)}
 					onClick={() => setShowRepos(!showRepos)}
 				>
@@ -155,26 +182,54 @@ export const MarketplaceTab = React.memo(() => {
 					<Box component="span" aria-hidden sx={{ marginLeft: 0.75, opacity: 0.6 }} children={repositories.length} />
 				</Button>
 			</Stack>
-			{showRepos && <Repositories repositories={repositories} />}
+			{showRepos && (
+				<Repositories
+					repositories={repositories}
+					view={view}
+					selected={picked}
+					onPick={(url) => setRepository(url === picked ? allRepositories : url)}
+				/>
+			)}
 			<Stack direction="row" sx={{ alignItems: "center", gap: 1, flexWrap: "wrap" }}>
-				<Stack direction="row" role="group" aria-label="Show" sx={{ gap: 1, flexWrap: "wrap" }}>
-					{(Object.keys(filterNames) as Filter[]).map((value) => {
-						const label = value === "all" ? "All" : filterNames[value];
-						return (
-							<Button
-								key={value}
-								size="small"
-								aria-pressed={filter === value}
-								aria-label={`${label} (${counts[value]})`}
-								sx={softButton(filter === value)}
-								onClick={() => setFilter(value)}
-							>
-								{label}
-								<Box component="span" aria-hidden sx={{ marginLeft: 0.75, opacity: 0.6 }} children={counts[value]} />
-							</Button>
-						);
-					})}
-				</Stack>
+				<Button
+					size="small"
+					startIcon={<VisibilityOffIcon />}
+					aria-pressed={hideInstalled}
+					sx={softButton(hideInstalled)}
+					onClick={() => setHideInstalled(!hideInstalled)}
+					children="Hide installed"
+				/>
+				<Select
+					variant="standard"
+					disableUnderline
+					value={picked}
+					inputProps={{ "aria-label": "Repository" }}
+					onChange={(event) => setRepository(event.target.value)}
+					renderValue={(value) => (value === allRepositories ? "All repositories" : (pickedName ?? "Unknown repository"))}
+					sx={{
+						...softButton(picked !== allRepositories),
+						fontSize: "0.8125rem",
+						maxWidth: 260,
+						"& .MuiSelect-select, & .MuiSelect-select:focus": {
+							backgroundColor: "transparent",
+							paddingY: 0.6,
+							paddingRight: "28px !important",
+							overflow: "hidden",
+							textOverflow: "ellipsis",
+						},
+						"& .MuiSelect-icon": { color: picked !== allRepositories ? "#000" : "text.secondary" },
+					}}
+					MenuProps={{ slotProps: { paper: { sx: { maxHeight: 420 } } } }}
+				>
+					<MenuItem value={allRepositories}>All repositories</MenuItem>
+					{listing.map((repo) => (
+						<MenuItem key={repo.url} value={repo.url}>
+							{repo.name ?? repo.url}
+							<Box component="span" sx={{ marginLeft: 1, opacity: 0.6 }} children={countOf(repo)} />
+						</MenuItem>
+					))}
+					{hasFromUrl && <MenuItem value={fromUrl}>Installed from url</MenuItem>}
+				</Select>
 				<Box sx={{ flexGrow: 1 }} />
 				<Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
 					<Typography id="luna-marketplace-sort" variant="body2" sx={{ color: "text.secondary", whiteSpace: "nowrap" }} children="Sort by" />
@@ -191,29 +246,20 @@ export const MarketplaceTab = React.memo(() => {
 					</Select>
 				</Stack>
 			</Stack>
-			{settingsFor?.installed && (
-				<Stack spacing={1} ref={settingsRef} sx={{ padding: 2, borderRadius: 3, border: `1px solid ${hairline}`, backgroundColor: surface }}>
-					<Button
-						size="small"
-						sx={{ ...softButton(), alignSelf: "flex-start" }}
-						onClick={() => setSettingsFor(undefined)}
-						children="← Back to all plugins"
-					/>
-					<LunaPluginSettings plugin={settingsFor} />
-				</Stack>
-			)}
-			{popular.length > 0 && (
-				<Stack spacing={1.5}>
-					<Section title="Popular" hint="most downloaded, not installed yet" />
-					<Box sx={grid} children={popular.map(card)} />
-				</Stack>
-			)}
 			<Stack spacing={1.5}>
-				<Section title={search ? `Results for “${query.trim()}”${filter === "all" ? "" : ` in ${filterNames[filter]}`}` : filterNames[filter]} />
+				<Stack direction="row" sx={{ alignItems: "baseline", gap: 1, minWidth: 0 }}>
+					<Typography variant="h6" noWrap title={heading} sx={{ fontWeight: 700, fontSize: "1.15rem", minWidth: 0 }} children={heading} />
+					{!loading && <Typography variant="body2" sx={{ color: "text.secondary", flexShrink: 0 }} children={visible.length} />}
+				</Stack>
 				{!loading && !visible.length && (
-					<Typography role="status" variant="body2" sx={{ color: "text.secondary", paddingY: 4, textAlign: "center" }} children="No plugins match." />
+					<Typography role="status" variant="body2" sx={{ color: "text.secondary", paddingY: 4, textAlign: "center" }}>
+						{items.length ? `No ${noun} match.` : `No repository lists ${noun} yet.`}
+					</Typography>
 				)}
-				<Box sx={grid} children={visible.map(card)} />
+				<Box
+					sx={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: 2 }}
+					children={visible.map((item) => item.card(pickRepository))}
+				/>
 			</Stack>
 		</Stack>
 	);

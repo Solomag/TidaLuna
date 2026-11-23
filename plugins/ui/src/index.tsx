@@ -13,7 +13,8 @@ export type { MuiThemeOverride } from "./lunaTheme";
 import { currentSettingsTab, LunaPage } from "./SettingsPage";
 export { currentSettingsTab, SettingsTabs } from "./SettingsPage";
 export type { SettingsTabContent, SettingsTabDefinition, SettingsTabOverride, SettingsTabProps } from "./SettingsPage";
-import { addToStores, normalizeStoreUrl, storeUrls } from "./SettingsPage/PluginStoreTab";
+import { marketplaceView } from "./SettingsPage/MarketplaceTab/catalog";
+import { addToStores, normalizeStoreUrl, storeUrls } from "./SettingsPage/stores";
 import { fetchReleases } from "./SettingsPage/SettingsTab/LunaClientUpdate";
 
 import { pkg } from "../../lib.native/src/index.native";
@@ -55,7 +56,9 @@ ipcRenderer.onOpenUrl(unloads, async (reqUrl) => {
 	const route = (url.host + url.pathname).replace(/^\/+|\/+$/g, "").toLowerCase();
 	switch (route) {
 		case "settings/store":
-			currentSettingsTab._ = "Plugin Store";
+			// Store links are about plugins, even if the Marketplace was last left on themes
+			marketplaceView._ = "plugins";
+			currentSettingsTab._ = "Marketplace";
 			settingsPage.open();
 			for (const [key, value] of url.searchParams) {
 				if (key.toLowerCase() !== "installfromurl" || storeUrls.includes(normalizeStoreUrl(value))) continue;

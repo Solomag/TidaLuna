@@ -52,3 +52,19 @@ export const darkField = {
 
 /** Small tag on a card */
 export const tag = { height: 22, fontSize: "0.7rem", fontWeight: 600, borderColor: hairline } satisfies SxProps<Theme>;
+
+/** Panel on the black background: cards, settings sections */
+export const cardSx = { borderRadius: 3, border: "1px solid", borderColor: hairline, backgroundColor: surface, padding: 2 } as const;
+
+/**
+ * Turns the top-level LunaSettings sections of a page into cards with the title inside (Settings and Supporters tabs).
+ * Scoped to direct children, so plugin settings nested inside keep their own look.
+ */
+export const sectionCardsSx = {
+	"& > .LunaSettings-root": { ...cardSx, paddingBottom: 1.5 },
+	"& > .LunaSettings-root > .LunaSettings-content": { backgroundColor: "transparent", boxShadow: "none", padding: 0 },
+	"& > .LunaSettings-root > .LunaTitle-root .LunaTitle-title": { fontWeight: 700, fontSize: "1.1rem" },
+	"& > .LunaSettings-root > .LunaTitle-root .LunaTitle-desc": { color: "text.secondary", fontWeight: 400 },
+	// Pill buttons like the rest of the page instead of MUI's uppercase ones
+	"& > .LunaSettings-root .MuiButton-root": { textTransform: "none", borderRadius: 999, fontWeight: 600, boxShadow: "none" },
+} satisfies SxProps<Theme>;

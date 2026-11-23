@@ -14,19 +14,28 @@ export const GitHubStars = React.memo(() => {
 	const [loading, setLoading] = React.useState(true);
 	const [page, setPage] = React.useState(1);
 	const [hasMore, setHasMore] = React.useState(true);
+	const [starCount, setStarCount] = React.useState<number>();
 	const loaderRef = React.useRef<HTMLDivElement | null>(null);
 
 	React.useEffect(() => {
 		const fetchStars = async () => {
 			setLoading(true);
-			const data = await ftch.json<{ user: Stargazer }[]>(`https://api.github.com/repos/Inrixia/TidaLuna/stargazers?per_page=100&page=${page}`, {
-				headers: {
-					Accept: "application/vnd.github.v3.star+json",
-				},
-			});
-			setStars((prev) => [...prev, ...data.map(({ user }) => user)]);
-			setHasMore(data.length === 100);
-			setLoading(false);
+			try {
+				const data = await ftch.json<{ user: Stargazer }[]>(`https://api.github.com/repos/Inrixia/TidaLuna/stargazers?per_page=100&page=${page}`, {
+					headers: {
+						Accept: "application/vnd.github.v3.star+json",
+					},
+				});
+				setStars((prev) => [...prev, ...data.map(({ user }) => user)]);
+				setHasMore(data.length === 100);
+			} catch {
+				// The list of stargazers isn't always public (rate limit, unauthenticated), the count is
+				setHasMore(false);
+				const repo = await ftch.json<{ stargazers_count?: number }>("https://api.github.com/repos/Inrixia/TidaLuna").catch(() => undefined);
+				if (typeof repo?.stargazers_count === "number") setStarCount(repo.stargazers_count);
+			} finally {
+				setLoading(false);
+			}
 		};
 		if (hasMore) fetchStars();
 	}, [page]);
@@ -53,7 +62,9 @@ export const GitHubStars = React.memo(() => {
 					avatarUrl: avatar_url,
 					url: html_url,
 				}))}
+				incomplete={hasMore}
 			/>
+			{!stars.length && starCount !== undefined && <div>★ {starCount.toLocaleString()} stars</div>}
 			<div ref={loaderRef} />
 			{loading && <div>Loading stargazers…</div>}
 		</LunaSettings>

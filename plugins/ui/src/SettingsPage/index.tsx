@@ -4,7 +4,6 @@ import Container from "@mui/material/Container";
 import Tab from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
 
-import AppsIcon from "@mui/icons-material/Apps";
 import ExtensionIcon from "@mui/icons-material/Extension";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import PaletteIcon from "@mui/icons-material/Palette";
@@ -13,20 +12,25 @@ import StorefrontIcon from "@mui/icons-material/Storefront";
 
 import { MarketplaceTab } from "./MarketplaceTab";
 import { PluginsTab } from "./PluginsTab";
-import { PluginStoreTab } from "./PluginStoreTab";
 import { SettingsTab } from "./SettingsTab";
 import { SupportersTab } from "./SupportersTab";
-import { addBuiltInSettingsTab, currentSettingsTab, SettingsTabs, settingsTabsVersion, type SettingsTab as SettingsTabDef } from "./tabs";
+import {
+	addBuiltInSettingsTab,
+	currentSettingsTab,
+	resolveTabId,
+	SettingsTabs,
+	settingsTabsVersion,
+	type SettingsTab as SettingsTabDef,
+} from "./tabs";
 import { ThemesTab } from "./ThemesTab";
 
 export { currentSettingsTab, SettingsTabs } from "./tabs";
 export type { SettingsTab as SettingsTabDefinition, SettingsTabContent, SettingsTabOverride, SettingsTabProps } from "./tabs";
 
-// Mock: installed + available plugins and repositories on one page, see MarketplaceTab
-addBuiltInSettingsTab({ id: "Marketplace", label: "Marketplace", icon: <AppsIcon />, order: 50, content: <MarketplaceTab /> });
 // keepAlive: the most used tab (plugin settings), so switching back to it doesn't re-render every plugin's settings
 addBuiltInSettingsTab({ id: "Plugins", label: "Plugins", icon: <ExtensionIcon />, order: 100, content: <PluginsTab />, keepAlive: true });
-addBuiltInSettingsTab({ id: "Plugin Store", label: "Plugin Store", icon: <StorefrontIcon />, order: 200, content: <PluginStoreTab /> });
+// Mock: every plugin from every repository on one page (replaces the Plugin Store tab), see MarketplaceTab
+addBuiltInSettingsTab({ id: "Marketplace", label: "Marketplace", icon: <StorefrontIcon />, order: 200, content: <MarketplaceTab /> });
 addBuiltInSettingsTab({ id: "Themes", label: "Themes", icon: <PaletteIcon />, order: 300, content: <ThemesTab /> });
 addBuiltInSettingsTab({ id: "Settings", label: "Settings", icon: <SettingsIcon />, order: 400, content: <SettingsTab /> });
 addBuiltInSettingsTab({ id: "Supporters", label: "Supporters", icon: <FavoriteIcon />, order: 500, content: <SupportersTab /> });
@@ -64,8 +68,9 @@ export const LunaPage = React.memo(() => {
 	}, []);
 
 	const tabs = SettingsTabs.list().filter((tab) => !tab.hidden);
-	// If the selected tab was removed or hidden fall back to the first tab
-	const selected = tabs.some((tab) => tab.id === currentTab) ? currentTab : tabs[0]?.id;
+	// A renamed tab id opens the new tab, a removed or hidden tab falls back to the first one
+	const wanted = resolveTabId(currentTab);
+	const selected = tabs.some((tab) => tab.id === wanted) ? wanted : tabs[0]?.id;
 	// The tab bar follows selected straight away, content renders as an interruptible transition so a heavy tab doesn't drop frames
 	const shown = React.useDeferredValue(selected);
 	// Keep currentSettingsTab (and onChange listeners) in sync with the fallback

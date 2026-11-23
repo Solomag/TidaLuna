@@ -103,7 +103,7 @@ programs.tidaluna = {
 
 ##### Stores
 
-`stores` replaces the store list, including the stores that come with TidaLuna (listed in `plugins/ui/src/SettingsPage/PluginStoreTab/index.tsx`).
+`stores` replaces the store list, including the stores that come with TidaLuna (listed in `plugins/ui/src/SettingsPage/stores.ts`).
 Plugins declared in `plugins` are looked up in these stores, so include the stores they come from:
 
 ```nix
@@ -118,7 +118,7 @@ programs.tidaluna = {
 ##### Plugins
 
 When `plugins` is set, every plugin not in the list is uninstalled on startup and missing ones are installed from the stores.
-Use the plugin's name as listed in the Plugin Store (e.g. `DiscordRPC`, `Song Downloader`, `meowarex.radiant-lyrics`) or its package name, case is ignored.
+Use the plugin's name as listed in the Marketplace (e.g. `DiscordRPC`, `Song Downloader`, `meowarex.radiant-lyrics`) or its package name, case is ignored.
 If a plugin is not found in any store, TidaLuna shows an error on startup.
 Settings of plugins you uninstall are kept. Enabling or disabling an installed plugin is still up to you in the UI.
 

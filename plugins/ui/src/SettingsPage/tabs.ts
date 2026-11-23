@@ -6,7 +6,7 @@ export type SettingsTabProps = { active: boolean };
 export type SettingsTabContent = React.ReactNode | React.ComponentType<SettingsTabProps>;
 
 export interface SettingsTab {
-	/** Unique id, also the value of the tab. Built-in ids: "Plugins", "Plugin Store", "Themes", "Settings", "Supporters" */
+	/** Unique id, also the value of the tab. Built-in ids: "Plugins", "Marketplace", "Themes", "Settings", "Supporters" */
 	id: string;
 	label: string;
 	icon?: React.ReactElement;
@@ -28,6 +28,10 @@ const changed = () => (settingsTabsVersion._ = settingsTabsVersion._ + 1);
 
 /** Currently selected Luna Settings tab id */
 export const currentSettingsTab = new Signal<string>("Plugins");
+
+/** Ids of built-in tabs that were renamed, so plugins using the old id keep working (unless a plugin registered a tab with that id) */
+const renamedTabIds: Record<string, string> = { "Plugin Store": "Marketplace" };
+export const resolveTabId = (id: string) => (tabs.has(id) ? id : (renamedTabIds[id] ?? id));
 
 /** Internal, used by @luna/ui for its built-in tabs */
 export const addBuiltInSettingsTab = (tab: SettingsTab) => tabs.set(tab.id, tab);
@@ -51,7 +55,7 @@ export const SettingsTabs = {
 	 * Later overrides win. Reverted when unloads run.
 	 */
 	override(unloads: LunaUnloads, id: string, override: SettingsTabOverride) {
-		const entry = { id, override };
+		const entry = { id: resolveTabId(id), override };
 		overrides.push(entry);
 		changed();
 		unloads.add(() => {
@@ -75,7 +79,7 @@ export const SettingsTabs = {
 	},
 	/** Switch Luna Settings to the given tab */
 	open(id: string) {
-		currentSettingsTab._ = id;
+		currentSettingsTab._ = resolveTabId(id);
 	},
 	/** Called with the tab id whenever the selected tab changes. Removed again when unloads run. */
 	onChange(unloads: LunaUnloads, cb: (id: string) => unknown): LunaUnload {

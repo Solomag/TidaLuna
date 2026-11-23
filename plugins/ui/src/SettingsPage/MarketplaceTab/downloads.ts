@@ -7,7 +7,7 @@ import type { Repository } from "./catalog";
 /**
  * Download counts of plugin builds, read from the GitHub release a store is published in
  * (`github.com/<owner>/<repo>/releases/download/<tag>` or `.../releases/latest/download`).
- * Only used to sort and pick popular plugins, the numbers aren't shown (see Inrixia/TidaLuna#197).
+ * Shown on Marketplace cards and used to sort them (earlier hidden, see Inrixia/TidaLuna#197).
  */
 const releaseApiUrl = (storeUrl: string): string | undefined => {
 	const url = URL.parse(storeUrl);
@@ -41,7 +41,8 @@ const fetchAssetDownloads = (storeUrl: string) => {
 			const release: { assets?: { name?: string; download_count?: number }[] } = await res.json().catch(() => ({}));
 			const byAsset: Record<string, number> = {};
 			for (const asset of release.assets ?? []) {
-				if (asset.name?.endsWith(".mjs") && typeof asset.download_count === "number") byAsset[asset.name.toLowerCase()] = asset.download_count;
+				if ((asset.name?.endsWith(".mjs") || asset.name?.endsWith(".css")) && typeof asset.download_count === "number")
+					byAsset[asset.name.toLowerCase()] = asset.download_count;
 			}
 			await cache.set<Cached>(storeUrl, { at: Date.now(), counts: byAsset }).catch(() => undefined);
 			return new Map(Object.entries(byAsset));
@@ -51,7 +52,7 @@ const fetchAssetDownloads = (storeUrl: string) => {
 	return counts;
 };
 
-/** Download count per plugin url, for plugins listed in GitHub release stores */
+/** Download count per plugin (or theme) url, for items listed in GitHub release stores */
 export const useDownloads = (repositories: Repository[]) => {
 	const [downloads, setDownloads] = React.useState<Map<string, number>>(new Map());
 	React.useEffect(() => {
@@ -66,6 +67,12 @@ export const useDownloads = (repositories: Repository[]) => {
 						const url = LunaPlugin.storePluginUrl(repository.url, entry).replace(/(\.mjs|\.json|\.mjs\.map)$/, "");
 						const count = byAsset.get(`${url.slice(url.lastIndexOf("/") + 1)}.mjs`.toLowerCase());
 						if (count !== undefined) next.set(url, count);
+					}
+					// Themes published as release assets next to store.json, keyed by their css url
+					for (const theme of repository.themes) {
+						if (!theme.url.startsWith(`${repository.url}/`)) continue;
+						const count = byAsset.get(theme.url.slice(theme.url.lastIndexOf("/") + 1).toLowerCase());
+						if (count !== undefined) next.set(theme.url, count);
 					}
 				}),
 			);

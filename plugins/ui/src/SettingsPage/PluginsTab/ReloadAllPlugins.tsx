@@ -6,6 +6,8 @@ import Button from "@mui/material/Button";
 import Tooltip from "@mui/material/Tooltip";
 import CachedIcon from "@mui/icons-material/Cached";
 
+import { softButton } from "../styles";
+
 const { trace } = Tracer("[@luna/ui]", null);
 
 export const ReloadAllPlugins = React.memo(() => {
@@ -24,11 +26,10 @@ export const ReloadAllPlugins = React.memo(() => {
 
 	return (
 		<Tooltip title="Reload every enabled plugin">
-			<span style={{ alignSelf: "flex-end" }}>
+			<span style={{ flexShrink: 0 }}>
 				<Button
 					size="small"
-					color="warning"
-					variant="outlined"
+					sx={softButton()}
 					disabled={reloading}
 					onClick={onClick}
 					startIcon={

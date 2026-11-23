@@ -10,6 +10,8 @@ import { LunaAuthorDisplay, LunaLink } from "../../components";
 
 export interface LunaPluginComponentProps extends PropsWithChildren {
 	name: string;
+	/** Tooltip on the name, e.g. the full package name */
+	title?: string;
 	version?: string;
 	link?: string;
 	loadError?: string;
@@ -17,12 +19,12 @@ export interface LunaPluginComponentProps extends PropsWithChildren {
 	desc?: ReactNode;
 	sx?: BoxProps["sx"];
 }
-export const LunaPluginHeader = React.memo(({ name, version, loadError, author, desc, children, sx, link }: LunaPluginComponentProps) => (
+export const LunaPluginHeader = React.memo(({ name, title, version, loadError, author, desc, children, sx, link }: LunaPluginComponentProps) => (
 	<Box sx={sx}>
 		<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-			<Typography variant="h6">
+			<Typography variant="subtitle1" title={title} sx={{ fontWeight: 700, fontSize: "1.05rem", lineHeight: 1.3 }}>
 				<LunaLink href={link}>{name}</LunaLink>
-				{version && <Typography variant="caption" style={{ opacity: 0.7, marginLeft: 6 }} children={version} />}
+				{version && <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 400, marginLeft: 0.75 }} children={version} />}
 			</Typography>
 			{children}
 			{loadError && (
@@ -42,6 +44,6 @@ export const LunaPluginHeader = React.memo(({ name, version, loadError, author, 
 			<Box sx={{ flexGrow: 1 }} /> {/* This pushes the author section to the right */}
 			{author && <LunaAuthorDisplay author={author} />}
 		</Stack>
-		{desc && <Typography variant="subtitle2" gutterBottom children={desc} />}
+		{desc && <Typography variant="body2" sx={{ color: "text.secondary", marginTop: 0.25 }} gutterBottom children={desc} />}
 	</Box>
 ));
