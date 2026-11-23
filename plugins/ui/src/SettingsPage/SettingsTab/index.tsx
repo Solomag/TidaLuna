@@ -18,11 +18,12 @@ import { LunaShortcuts } from "./LunaShortcuts";
 import { LunaVersionInfo } from "./LunaVersionInfo";
 
 /** Which part of the Settings tab is shown */
-export const settingsView = new Signal<"general" | "flags">("general");
+export const settingsView = new Signal<"general" | "flags" | "permissions">("general");
 
 const views = [
 	{ value: "general", label: "General" },
 	{ value: "flags", label: "Feature flags" },
+	{ value: "permissions", label: "Native permissions" },
 ] as const;
 
 export const SettingsTab = React.memo(() => {
@@ -30,16 +31,15 @@ export const SettingsTab = React.memo(() => {
 	const switcher = <ViewSwitch label="Show" value={view} options={views} onChange={(next) => (settingsView._ = next)} />;
 
 	const corePlugins = Object.values(LunaPlugin.plugins).filter((plugin) => LunaPlugin.corePlugins.has(plugin.name));
-	// Both stay mounted so switching back doesn't refetch releases or lose the picked version
+	// General and flags stay mounted so switching back doesn't refetch releases or lose the picked version
 	return (
 		<>
 			<div hidden={view !== "general"}>
 				<Stack spacing={2} sx={{ paddingBottom: 4, ...sectionCardsSx }}>
-					<PageHeader title="Settings" subtitle="TIDALuna itself: version, shortcuts, permissions, core plugins, cache and backups" />
+					<PageHeader title="Settings" subtitle="TIDALuna itself: version, shortcuts, core plugins, cache and backups" />
 					{switcher}
 					<LunaVersionInfo />
 					<LunaShortcuts />
-					<LunaNativePermissions />
 					{/* Same cards as in the Installed tab, without the switch and Uninstall */}
 					<Stack component="section" spacing={1.5} data-luna-core-plugins>
 						<Stack spacing={0.25}>
@@ -58,6 +58,8 @@ export const SettingsTab = React.memo(() => {
 				</Stack>
 			</div>
 			<div hidden={view !== "flags"} children={<LunaFeatureFlags switcher={switcher} />} />
+			{/* Mounted when shown, so answers given since (a plugin installed meanwhile) are listed */}
+			{view === "permissions" && <LunaNativePermissions switcher={switcher} />}
 		</>
 	);
 });

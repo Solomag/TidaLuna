@@ -52,6 +52,8 @@ const defaultTheme = createTheme();
 
 export const lunaMuiTheme = createTheme({
 	palette: {
+		// TIDAL is dark: light mode drew disabled buttons, field outlines and dividers in black on the dark page
+		mode: "dark",
 		primary: {
 			main: grey.A200,
 		},

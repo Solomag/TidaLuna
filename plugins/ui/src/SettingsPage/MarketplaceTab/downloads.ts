@@ -2,6 +2,7 @@ import React from "react";
 
 import { LunaPlugin, ReactiveStore } from "@luna/core";
 
+import { gitHubFetch } from "../github";
 import type { Repository } from "./catalog";
 
 /**
@@ -19,7 +20,7 @@ const releaseApiUrl = (storeUrl: string): string | undefined => {
 	if (rest[0] === "latest" && rest[1] === "download") return `${base}/latest`;
 };
 
-// The GitHub API allows 60 unauthenticated requests an hour, so counts are kept for 6 hours across restarts
+// The GitHub API allows 60 unauthenticated requests an hour (see github.ts), so counts are kept for 6 hours across restarts
 const maxAge = 6 * 60 * 60 * 1000;
 const cache = ReactiveStore.getStore("@luna/marketplaceDownloads");
 type Cached = { at: number; counts: Record<string, number> };
@@ -32,9 +33,9 @@ const fetchAssetDownloads = (storeUrl: string) => {
 			if (apiUrl === undefined) return new Map<string, number>();
 			const cached = await cache.get<Cached>(storeUrl).catch(() => undefined);
 			if (cached !== undefined && Date.now() - cached.at < maxAge) return new Map(Object.entries(cached.counts));
-			const res = await fetch(apiUrl).catch(() => undefined);
-			// Rate limited or offline: keep showing the last known counts
-			if (!res?.ok) {
+			const res = await gitHubFetch(apiUrl).catch(() => undefined);
+			// Rate limited (then nothing more is asked until it resets) or offline: keep showing the last known counts
+			if (res === undefined) {
 				releases.delete(storeUrl);
 				return new Map(Object.entries(cached?.counts ?? {}));
 			}

@@ -15,7 +15,7 @@ export { currentSettingsTab, SettingsTabs } from "./SettingsPage";
 export type { SettingsTabContent, SettingsTabDefinition, SettingsTabOverride, SettingsTabProps } from "./SettingsPage";
 import { marketplaceView } from "./SettingsPage/MarketplaceTab/catalog";
 import { addToStores, normalizeStoreUrl, storeUrls } from "./SettingsPage/stores";
-import { fetchReleases } from "./SettingsPage/SettingsTab/LunaClientUpdate";
+import { fetchReleases } from "./SettingsPage/github";
 
 import { pkg } from "../../lib.native/src/index.native";
 import { unloads } from "./index.safe";

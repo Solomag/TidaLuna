@@ -1,9 +1,5 @@
-import { ftch } from "@luna/core";
 import React from "react";
 import semverGt from "semver/functions/gt";
-
-import { components } from "@octokit/openapi-types";
-type GitHubRelease = components["schemas"]["release"];
 
 import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
@@ -21,6 +17,7 @@ export const version = (await pkg()).version;
 
 import { useConfirm } from "material-ui-confirm";
 import { LunaButton, LunaLink, LunaSettings, SpinningButton } from "../../components";
+import { fetchReleases, type GitHubRelease } from "../github";
 import { tag } from "../styles";
 
 const REPO_URL = "https://github.com/Inrixia/TidaLuna";
@@ -33,8 +30,6 @@ const isNewer = (tag: string) => {
 	}
 };
 
-export const fetchReleases = () => ftch.json<GitHubRelease[]>("https://api.github.com/repos/Inrixia/TidaLuna/releases");
-
 export const LunaClientUpdate = React.memo(() => {
 	const confirm = useConfirm();
 	const [releases, setReleases] = React.useState<GitHubRelease[]>([]);
@@ -43,11 +38,11 @@ export const LunaClientUpdate = React.memo(() => {
 	const [busy, setBusy] = React.useState<"updating" | "resetting" | null>(null);
 	const [selectedRelease, setSelectedRelease] = React.useState<string>(version!);
 
-	const updateReleases = async () => {
+	const updateReleases = async (fresh = false) => {
 		setLoading(true);
 		setError(undefined);
 		try {
-			const releases = await fetchReleases();
+			const releases = await fetchReleases(fresh);
 			setReleases(releases);
 			if (releases[0] !== undefined) setSelectedRelease(releases[0].tag_name);
 		} catch (err: any) {
@@ -77,7 +72,7 @@ export const LunaClientUpdate = React.memo(() => {
 	return (
 		<LunaSettings
 			title="Client Updates"
-			titleChildren={<SpinningButton title="Fetch releases" loading={loading} onClick={updateReleases} />}
+			titleChildren={<SpinningButton title="Fetch releases" loading={loading} onClick={() => updateReleases(true)} />}
 			direction="row"
 			// Top, so the buttons line up with the release picker and not with the picker plus the links under it
 			sx={{ alignItems: "flex-start" }}
@@ -119,7 +114,7 @@ export const LunaClientUpdate = React.memo(() => {
 						</MenuItem>
 					))}
 				/>
-				{error && <Typography variant="caption" color="error" children={`Couldn't fetch releases: ${error}`} />}
+				{error && <Typography variant="caption" color="error" children={`Couldn't fetch releases. ${error}`} />}
 				{/* What the selected release brings, before installing it (#56) */}
 				<Typography variant="caption" sx={{ opacity: 0.8 }}>
 					<LunaLink href={`${REPO_URL}/releases/tag/${selectedRelease}`}>Release notes</LunaLink>

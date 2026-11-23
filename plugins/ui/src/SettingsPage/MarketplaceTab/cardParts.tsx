@@ -166,29 +166,31 @@ export const CatalogCard = ({
 	uninstallHint?: string;
 	onToggleInstall: () => Promise<unknown>;
 }) => {
-	const [busy, setBusy] = React.useState(false);
+	// What the click started: install() marks the plugin installed before it finishes loading (and asks about native code)
+	const [busy, setBusy] = React.useState<"installing" | "removing">();
 	const toggleInstall = async () => {
-		setBusy(true);
+		setBusy(installed ? "removing" : "installing");
 		try {
 			await onToggleInstall();
 		} finally {
-			setBusy(false);
+			setBusy(undefined);
 		}
 	};
+	const removing = busy === undefined ? installed : busy === "removing";
 	return (
 		<CardShell
 			{...shell}
 			badge={downloads !== undefined && <DownloadsBadge downloads={downloads} />}
 			actions={
-				<Tooltip title={installed ? (uninstallHint ?? "") : ""}>
+				<Tooltip title={busy === undefined && installed ? (uninstallHint ?? "") : ""}>
 					<span>
 						<Button
 							size="small"
-							variant={installed ? "text" : "contained"}
-							sx={installed ? uninstallSx : primaryButton}
-							disabled={busy}
+							variant={removing ? "text" : "contained"}
+							sx={removing ? uninstallSx : primaryButton}
+							disabled={busy !== undefined}
 							onClick={toggleInstall}
-							children={busy ? (installed ? "Removing…" : "Installing…") : installed ? "Uninstall" : "Install"}
+							children={busy === "installing" ? "Installing…" : busy === "removing" ? "Removing…" : installed ? "Uninstall" : "Install"}
 						/>
 					</span>
 				</Tooltip>
