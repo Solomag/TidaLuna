@@ -36,14 +36,6 @@ export const settingsPage = Page.register(
 		</ConfirmProvider>
 	</LunaMuiThemeProvider>,
 );
-// thx @n1ckoates re CoverTheme <3
-settingsPage.pageStyles.background = `
-radial-gradient(ellipse at top left, rgba(88, 10, 82, 0.5), transparent 70%),
-radial-gradient(ellipse at center left, rgba(18, 234, 246, 0.5), transparent 70%),
-radial-gradient(ellipse at bottom left, rgba(205, 172, 191, 0.5), transparent 70%),
-radial-gradient(ellipse at top right, rgba(139, 203, 235, 0.5), transparent 70%),
-radial-gradient(ellipse at center right, rgba(98, 103, 145, 0.5), transparent 70%),
-radial-gradient(ellipse at bottom right, rgba(47, 48, 78, 0.5), transparent 70%)`;
 
 const SettingsButton = ContextMenu.addButton(unloads);
 SettingsButton.text = "Luna Settings";

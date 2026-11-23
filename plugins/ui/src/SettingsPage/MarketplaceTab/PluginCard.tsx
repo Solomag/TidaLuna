@@ -127,7 +127,7 @@ export const PluginCard = React.memo(
 				sx={{
 					padding: 1.5,
 					borderRadius: 2,
-					backgroundColor: installed ? "rgba(255, 255, 255, 0.07)" : "rgba(0, 0, 0, 0.2)",
+					backgroundColor: installed ? "rgba(255, 255, 255, 0.09)" : "rgba(255, 255, 255, 0.04)",
 					boxShadow: update ? "0 0 0 1px rgba(144, 202, 249, 0.6)" : 2,
 					minHeight: 160,
 				}}

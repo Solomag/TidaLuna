@@ -9,7 +9,7 @@ import { devStoreUrl, removeRepository, type Repository } from "./catalog";
 
 /** Former "stores": a repository is a store.json listing plugins */
 export const Repositories = React.memo(({ repositories }: { repositories: Repository[] }) => (
-	<Stack spacing={1} sx={{ padding: 1.5, borderRadius: 2, backgroundColor: "rgba(0, 0, 0, 0.15)" }}>
+	<Stack spacing={1} sx={{ padding: 1.5, borderRadius: 2, backgroundColor: "rgba(255, 255, 255, 0.04)" }}>
 		<InstallFromUrl />
 		{repositories.map((repo) => (
 			<Stack key={repo.url} direction="row" spacing={1} sx={{ alignItems: "center" }}>
