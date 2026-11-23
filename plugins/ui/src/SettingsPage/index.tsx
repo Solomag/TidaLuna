@@ -22,9 +22,9 @@ import { ThemesTab } from "./ThemesTab";
 export { currentSettingsTab, SettingsTabs } from "./tabs";
 export type { SettingsTab as SettingsTabDefinition, SettingsTabContent, SettingsTabOverride, SettingsTabProps } from "./tabs";
 
-// keepAlive: the most used tab (plugin settings), so switching back to it doesn't re-render every plugin's settings
 // Mock: installed + available plugins and repositories on one page, see MarketplaceTab
 addBuiltInSettingsTab({ id: "Marketplace", label: "Marketplace", icon: <AppsIcon />, order: 50, content: <MarketplaceTab /> });
+// keepAlive: the most used tab (plugin settings), so switching back to it doesn't re-render every plugin's settings
 addBuiltInSettingsTab({ id: "Plugins", label: "Plugins", icon: <ExtensionIcon />, order: 100, content: <PluginsTab />, keepAlive: true });
 addBuiltInSettingsTab({ id: "Plugin Store", label: "Plugin Store", icon: <StorefrontIcon />, order: 200, content: <PluginStoreTab /> });
 addBuiltInSettingsTab({ id: "Themes", label: "Themes", icon: <PaletteIcon />, order: 300, content: <ThemesTab /> });

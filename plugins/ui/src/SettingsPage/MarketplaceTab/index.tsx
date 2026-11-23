@@ -42,6 +42,7 @@ export const MarketplaceTab = React.memo(() => {
 	const [filter, setFilter] = React.useState<Filter>("all");
 	const [showRepos, setShowRepos] = React.useState(false);
 	const [settingsFor, setSettingsFor] = React.useState<LunaPlugin>();
+	if (settingsFor !== undefined && !settingsFor.installed) setSettingsFor(undefined);
 	const settingsRef = React.useRef<HTMLDivElement>(null);
 	React.useEffect(() => {
 		if (settingsFor !== undefined) settingsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });

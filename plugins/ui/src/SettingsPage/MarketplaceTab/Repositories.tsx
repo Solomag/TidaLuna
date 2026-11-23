@@ -27,7 +27,11 @@ export const Repositories = React.memo(({ repositories }: { repositories: Reposi
 						children={repo.url}
 					/>
 				</Stack>
-				<LunaTrashButton disabled={repo.url === devStoreUrl} title="Remove repository" onClick={() => removeRepository(repo.url)} />
+				<LunaTrashButton
+					disabled={repo.url === devStoreUrl}
+					title="Remove repository (plugins installed from it stay installed)"
+					onClick={() => removeRepository(repo.url)}
+				/>
 			</Stack>
 		))}
 	</Stack>

@@ -16,13 +16,19 @@ import SettingsIcon from "@mui/icons-material/Settings";
 import { LunaAuthorDisplay } from "../../components";
 import { hasNative, type CatalogEntry } from "./catalog";
 
-type NativeInfo = "checking" | boolean | undefined;
+type NativeInfo = "checking" | "unknown" | boolean | undefined;
 
 const NativeChip = ({ native }: { native: NativeInfo }) => {
 	if (native === undefined) return null;
-	if (native === "checking") return <Chip size="small" variant="outlined" label="native: checking…" />;
+	if (native === "checking" || native === "unknown") return <Chip size="small" variant="outlined" label={`native: ${native}`} />;
 	return (
-		<Tooltip title={native ? "Runs code in TIDAL's main process (asks for permission first)" : "Renderer only, no native code"}>
+		<Tooltip
+			title={
+				native
+					? "Registers native code that runs in TIDAL's main process (Luna asks for permission first)"
+					: "No native module registration found in the built code"
+			}
+		>
 			<Chip size="small" variant="outlined" color={native ? "warning" : "default"} label={native ? "native" : "no native"} />
 		</Tooltip>
 	);
@@ -33,11 +39,13 @@ const UpdateConfirm = React.memo(
 		const [native, setNative] = React.useState<NativeInfo>("checking");
 		const [busy, setBusy] = React.useState(false);
 		const [error, setError] = React.useState<string>();
+		const [attempt, retry] = React.useReducer((x: number) => x + 1, 0);
 		React.useEffect(() => {
+			setNative("checking");
 			LunaPlugin.fetchCode(plugin.url)
 				.then((code) => setNative(hasNative(code)))
-				.catch(() => setNative(undefined));
-		}, [plugin]);
+				.catch(() => setNative("unknown"));
+		}, [plugin, attempt]);
 		const was = hasNative(plugin.code);
 		return (
 			<Stack spacing={1} sx={{ marginTop: 1, padding: 1, borderRadius: 1, backgroundColor: "rgba(255, 255, 255, 0.06)" }}>
@@ -48,19 +56,22 @@ const UpdateConfirm = React.memo(
 					<NativeChip native={native} />
 					{native === true && !was && <Typography variant="caption" color="warning.main" children="new: adds native code" />}
 				</Stack>
+				{native === "unknown" && <Typography variant="caption" color="warning.main" children="Couldn't fetch the new build to check it." />}
 				{!plugin.enabled && <Typography variant="caption" sx={{ opacity: 0.8 }} children="Enable the plugin to update it." />}
 				{error && <Typography variant="caption" color="error" children={`Update failed: ${error}`} />}
 				<Stack direction="row" spacing={1}>
 					<Button
 						size="small"
 						variant="contained"
-						disabled={busy || !plugin.enabled}
+						disabled={busy || !plugin.enabled || typeof native !== "boolean"}
 						onClick={async () => {
 							setBusy(true);
 							setError(undefined);
 							try {
 								// reload() fetches the new package + code and loads it, same path as today's update on startup
 								await plugin.reload();
+								// reload() keeps the old code when the new one can't be fetched
+								if (plugin.package?.hash !== update.hash) throw new Error(`still on ${plugin.package?.version ?? "the old build"}`);
 								onDone();
 							} catch (err: any) {
 								setError(err?.message ?? String(err));
@@ -70,6 +81,7 @@ const UpdateConfirm = React.memo(
 						}}
 						children={busy ? "Updating…" : "Update"}
 					/>
+					{native === "unknown" && <Button size="small" disabled={busy} onClick={retry} children="Retry" />}
 					<Button size="small" disabled={busy} onClick={onCancel} children="Not now" />
 				</Stack>
 			</Stack>
@@ -155,15 +167,19 @@ export const PluginCard = React.memo(
 				) : (
 					<Stack direction="row" spacing={1}>
 						{update && <Button size="small" variant="contained" color="info" onClick={() => setConfirming(true)} children="Update…" />}
-						<Button
-							size="small"
-							variant={installed ? "outlined" : "contained"}
-							color={installed ? "error" : "success"}
-							sx={installed ? { color: red[300], borderColor: red[300] } : undefined}
-							disabled={busy}
-							onClick={toggleInstall}
-							children={busy ? "…" : installed ? "Uninstall" : "Install"}
-						/>
+						<Tooltip title={installed ? "Uninstall (also removes its saved settings)" : ""}>
+							<span>
+								<Button
+									size="small"
+									variant={installed ? "outlined" : "contained"}
+									color={installed ? "error" : "success"}
+									sx={installed ? { color: red[300], borderColor: red[300] } : undefined}
+									disabled={busy}
+									onClick={toggleInstall}
+									children={busy ? "…" : installed ? "Uninstall" : "Install"}
+								/>
+							</span>
+						</Tooltip>
 					</Stack>
 				)}
 			</Stack>
