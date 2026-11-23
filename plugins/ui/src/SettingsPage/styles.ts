@@ -56,6 +56,20 @@ export const tag = { height: 22, fontSize: "0.7rem", fontWeight: 600, borderColo
 /** Panel on the black background: cards, settings sections */
 export const cardSx = { borderRadius: 3, border: "1px solid", borderColor: hairline, backgroundColor: surface, padding: 2 } as const;
 
+/** Grid of plugin and theme cards (Marketplace and Installed): 4 columns on the full-width page */
+export const cardGridSx = { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: 2 } satisfies SxProps<Theme>;
+
+/** A card in that grid, a bit lighter on hover */
+export const gridCardSx = {
+	...cardSx,
+	minWidth: 0,
+	transition: "background-color 120ms, border-color 120ms",
+	"&:hover": { backgroundColor: surfaceHover, borderColor: "rgba(255, 255, 255, 0.18)" },
+} satisfies SxProps<Theme>;
+
+/** Status line under a grid or list: nothing installed, nothing matches */
+export const emptyStateSx = { color: "text.secondary", paddingY: 4, textAlign: "center" } satisfies SxProps<Theme>;
+
 /**
  * Turns the top-level LunaSettings sections of a page into cards with the title inside (Settings and Supporters tabs).
  * Scoped to direct children, so plugin settings nested inside keep their own look.

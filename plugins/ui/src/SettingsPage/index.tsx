@@ -6,34 +6,36 @@ import Tabs from "@mui/material/Tabs";
 
 import ExtensionIcon from "@mui/icons-material/Extension";
 import FavoriteIcon from "@mui/icons-material/Favorite";
-import PaletteIcon from "@mui/icons-material/Palette";
 import SettingsIcon from "@mui/icons-material/Settings";
 import StorefrontIcon from "@mui/icons-material/Storefront";
 
+import { InstalledTab, installedView } from "./InstalledTab";
 import { MarketplaceTab } from "./MarketplaceTab";
-import { PluginsTab } from "./PluginsTab";
+import { marketplaceView } from "./MarketplaceTab/catalog";
 import { SettingsTab } from "./SettingsTab";
 import { SupportersTab } from "./SupportersTab";
 import {
 	addBuiltInSettingsTab,
+	addTabAlias,
 	currentSettingsTab,
+	openAlias,
 	resolveTabId,
 	SettingsTabs,
 	settingsTabsVersion,
 	type SettingsTab as SettingsTabDef,
 } from "./tabs";
-import { ThemesTab } from "./ThemesTab";
 
 export { currentSettingsTab, SettingsTabs } from "./tabs";
 export type { SettingsTab as SettingsTabDefinition, SettingsTabContent, SettingsTabOverride, SettingsTabProps } from "./tabs";
 
-// keepAlive: the most used tab (plugin settings), so switching back to it doesn't re-render every plugin's settings
-addBuiltInSettingsTab({ id: "Plugins", label: "Plugins", icon: <ExtensionIcon />, order: 100, content: <PluginsTab />, keepAlive: true });
+// Installed plugins and themes (id "Plugins" kept for plugins that open it). keepAlive: the most used tab, so switching back doesn't re-render every card
+addBuiltInSettingsTab({ id: "Plugins", label: "Installed", icon: <ExtensionIcon />, order: 100, content: <InstalledTab />, keepAlive: true });
 // Mock: every plugin from every repository on one page (replaces the Plugin Store tab), see MarketplaceTab
 addBuiltInSettingsTab({ id: "Marketplace", label: "Marketplace", icon: <StorefrontIcon />, order: 200, content: <MarketplaceTab /> });
-addBuiltInSettingsTab({ id: "Themes", label: "Themes", icon: <PaletteIcon />, order: 300, content: <ThemesTab /> });
 addBuiltInSettingsTab({ id: "Settings", label: "Settings", icon: <SettingsIcon />, order: 400, content: <SettingsTab /> });
 addBuiltInSettingsTab({ id: "Supporters", label: "Supporters", icon: <FavoriteIcon />, order: 500, content: <SupportersTab /> });
+addTabAlias("Plugin Store", { id: "Marketplace", open: () => (marketplaceView._ = "plugins") });
+addTabAlias("Themes", { id: "Plugins", open: () => (installedView._ = "themes"), merged: true });
 
 // Content is either a node or a component, components can be objects too (React.memo, forwardRef)
 const isComponent = (content: SettingsTabDef["content"]): content is React.ComponentType<{ active: boolean }> =>
@@ -75,11 +77,13 @@ export const LunaPage = React.memo(() => {
 	const shown = React.useDeferredValue(selected);
 	// Keep currentSettingsTab (and onChange listeners) in sync with the fallback
 	React.useEffect(() => {
-		if (selected !== undefined && selected !== currentTab) currentSettingsTab._ = selected;
+		if (selected === undefined || selected === currentTab) return;
+		openAlias(currentTab);
+		currentSettingsTab._ = selected;
 	}, [selected, currentTab]);
 
 	return (
-		<Container maxWidth="md" sx={{ padding: 0, marginBottom: 10, flexGrow: 1 }} data-luna-settings-root>
+		<Container maxWidth="lg" sx={{ padding: 0, marginBottom: 10, flexGrow: 1 }} data-luna-settings-root>
 			<Tabs value={selected ?? false} onChange={(_, tab) => (currentSettingsTab._ = tab)}>
 				{tabs.map((tab) => (
 					<Tab key={tab.id} iconPosition="start" icon={tab.icon} value={tab.id} label={tab.label} data-luna-settings-tab={tab.id} />

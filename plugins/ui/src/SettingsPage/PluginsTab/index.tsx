@@ -1,26 +1,37 @@
 import React from "react";
 
 import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
 import InputAdornment from "@mui/material/InputAdornment";
 import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
+import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 
 import SearchIcon from "@mui/icons-material/Search";
+import SystemUpdateAltIcon from "@mui/icons-material/SystemUpdateAlt";
 
 import { LunaPlugin } from "@luna/core";
-import { SpinningButton } from "../../components";
 import { useUpdates } from "../MarketplaceTab/catalog";
 import { PageHeader } from "../PageHeader";
-import { darkField } from "../styles";
+import { cardGridSx, darkField, emptyStateSx, pillButton } from "../styles";
+import { InstalledPluginCard } from "./InstalledPluginCard";
 import { installedPlugins, matchingPluginNames, watchInstalledPlugins } from "./installedPlugins";
-import { LunaPluginSettings } from "./LunaPluginSettings";
 import { ReloadAllPlugins } from "./ReloadAllPlugins";
 
-/** Installed plugins (the library): settings, enable/disable, reload and updates. New plugins come from the Marketplace tab. */
-export const PluginsTab = React.memo(() => {
+/** Blue outline like the update notices on the cards, so it doesn't read as one more grey Reload button */
+const checkUpdatesSx = {
+	...pillButton,
+	color: "info.light",
+	border: "1px solid rgba(144, 202, 249, 0.5)",
+	"&:hover": { backgroundColor: "rgba(144, 202, 249, 0.1)", borderColor: "info.light" },
+	"@keyframes spin": { "0%": { transform: "rotate(0deg)" }, "100%": { transform: "rotate(360deg)" } },
+};
+
+/** Installed plugins as cards: on/off, settings, reload, updates. New plugins come from the Marketplace tab. */
+export const PluginsView = React.memo(({ switcher }: { switcher: React.ReactNode }) => {
 	const [query, setQuery] = React.useState("");
 	const [descending, setDescending] = React.useState(false);
 	const readInstalled = () => installedPlugins(Object.values(LunaPlugin.plugins), LunaPlugin.corePlugins, descending);
@@ -32,11 +43,12 @@ export const PluginsTab = React.memo(() => {
 	const visible = matchingPluginNames(eligible, query);
 	// Plugins with an update first, otherwise by name
 	const ordered = [...eligible.filter((plugin) => updates.has(plugin.url)), ...eligible.filter((plugin) => !updates.has(plugin.url))];
-	const summary = `${eligible.length} installed${updates.size ? ` · ${updates.size} update${updates.size === 1 ? "" : "s"} available` : ""}`;
+	const summary = `${eligible.length} plugins installed${updates.size ? ` · ${updates.size} update${updates.size === 1 ? "" : "s"} available` : ""}`;
 
 	return (
 		<Stack spacing={2.5} sx={{ paddingBottom: 4 }}>
-			<PageHeader title="Plugins" subtitle={summary} highlight={updates.size > 0} />
+			<PageHeader title="Installed" subtitle={summary} highlight={updates.size > 0} />
+			{switcher}
 			<Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
 				<TextField
 					fullWidth
@@ -57,7 +69,18 @@ export const PluginsTab = React.memo(() => {
 						},
 					}}
 				/>
-				<SpinningButton title="Check for updates" spin={checking} disabled={checking || !eligible.length} onClick={check} />
+				<Tooltip title="Look for newer builds of your plugins (nothing is installed without your OK)">
+					<span style={{ flexShrink: 0 }}>
+						<Button
+							size="small"
+							startIcon={<SystemUpdateAltIcon sx={{ animation: checking ? "spin 1s linear infinite" : "none" }} />}
+							sx={checkUpdatesSx}
+							disabled={checking || !eligible.length}
+							onClick={check}
+							children={checking ? "Checking…" : "Check for updates"}
+						/>
+					</span>
+				</Tooltip>
 				<ReloadAllPlugins />
 				<Box sx={{ flexShrink: 0 }}>
 					<Select
@@ -74,23 +97,20 @@ export const PluginsTab = React.memo(() => {
 				</Box>
 			</Stack>
 			{!eligible.length && (
-				<Typography role="status" variant="body2" sx={{ color: "text.secondary", paddingY: 4, textAlign: "center" }}>
-					You have no plugins installed. Find some in the Marketplace tab.
-				</Typography>
+				<Typography role="status" variant="body2" sx={emptyStateSx} children="You have no plugins installed. Find some in the Marketplace tab." />
 			)}
 			{!!eligible.length && !visible.size && (
-				<Typography
-					role="status"
-					variant="body2"
-					sx={{ color: "text.secondary", paddingY: 4, textAlign: "center" }}
-					children="No installed plugins match your search."
-				/>
+				<Typography role="status" variant="body2" sx={emptyStateSx} children="No installed plugins match your search." />
 			)}
-			<Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+			<Box sx={cardGridSx}>
 				{ordered.map((plugin) => (
-					<div key={plugin.url} hidden={!visible.has(plugin)}>
-						<LunaPluginSettings plugin={plugin} update={updates.get(plugin.url)} onUpdated={applied} />
-					</div>
+					<Box
+						key={plugin.url}
+						hidden={!visible.has(plugin)}
+						sx={{ display: visible.has(plugin) ? "flex" : "none", minWidth: 0, "& > *": { flexGrow: 1 } }}
+					>
+						<InstalledPluginCard plugin={plugin} update={updates.get(plugin.url)} onUpdated={applied} />
+					</Box>
 				))}
 			</Box>
 		</Stack>

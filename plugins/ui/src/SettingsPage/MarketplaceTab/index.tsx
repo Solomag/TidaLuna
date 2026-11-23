@@ -10,23 +10,27 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 
 import SearchIcon from "@mui/icons-material/Search";
+import CloseIcon from "@mui/icons-material/Close";
 import StorageIcon from "@mui/icons-material/Storage";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 
 import { compareNames, displayName } from "../names";
 import { PageHeader } from "../PageHeader";
-import { darkField, softButton } from "../styles";
+import { cardGridSx, darkField, emptyStateSx, softButton } from "../styles";
+import { useSignalValue, ViewSwitch } from "../ViewSwitch";
 import { marketplaceView, useCatalog, useInstalledThemes, useInstalledVersion, useRepositoryUrls, withInstalled } from "./catalog";
 import { useDownloads } from "./downloads";
 import { PluginCard } from "./PluginCard";
-import { Repositories } from "./Repositories";
+import { allRepositories, fromUrl, Repositories } from "./Repositories";
 import { ThemeCard } from "./ThemeCard";
 
 type Sort = "downloads" | "name";
 type View = typeof marketplaceView._;
-const allRepositories = "*";
-/** Repository filter value for plugins installed from a plain url */
-const fromUrl = "";
+
+const views = [
+	{ value: "plugins", label: "Plugins" },
+	{ value: "themes", label: "Themes" },
+] as const;
 
 /** What the grid needs from a plugin or a theme */
 type Item = {
@@ -35,7 +39,7 @@ type Item = {
 	search: string;
 	repositoryUrl: string;
 	installed: boolean;
-	card: (onPickRepository: (url: string) => void) => React.ReactNode;
+	card: (picked: string, onPickRepository: (url: string) => void) => React.ReactNode;
 };
 
 const authorName = (author: unknown) => (typeof author === "string" ? author : ((author as { name?: string } | undefined)?.name ?? ""));
@@ -47,7 +51,7 @@ const searchText = (...parts: unknown[]) =>
 
 /**
  * Mock of a single repository page (replaces the Plugin Store tab): every plugin, or every theme, from every repository in one grid.
- * Installed plugins, their settings and updates live in the Plugins tab, installed themes in the Themes tab.
+ * Installed plugins and themes, their settings and updates live in the Installed tab.
  */
 export const MarketplaceTab = React.memo(() => {
 	const urls = useRepositoryUrls();
@@ -57,11 +61,7 @@ export const MarketplaceTab = React.memo(() => {
 	const installedThemes = useInstalledThemes();
 	const downloads = useDownloads(repositories);
 
-	const [view, setView] = React.useState<View>(marketplaceView._);
-	React.useEffect(() => {
-		const unload = marketplaceView.onValue(setView);
-		return () => void unload();
-	}, []);
+	const view: View = useSignalValue(marketplaceView);
 	const [query, setQuery] = React.useState("");
 	const [hideInstalled, setHideInstalled] = React.useState(false);
 	const [repository, setRepository] = React.useState(allRepositories);
@@ -76,12 +76,13 @@ export const MarketplaceTab = React.memo(() => {
 					search: searchText(displayName(plugin.name), plugin.package?.description, authorName(plugin.package?.author), repository?.name),
 					repositoryUrl: repository?.url ?? fromUrl,
 					installed: plugin.installed,
-					card: (onPick) => (
+					card: (picked, onPick) => (
 						<PluginCard
 							key={plugin.url}
 							entry={{ plugin, repository }}
 							installed={plugin.installed}
 							downloads={downloads.get(plugin.url)}
+							repositoryActive={repository !== undefined && repository.url === picked}
 							onPickRepository={onPick}
 						/>
 					),
@@ -93,12 +94,13 @@ export const MarketplaceTab = React.memo(() => {
 						search: searchText(theme.name, theme.description, authorName(theme.author), repo.name),
 						repositoryUrl: repo.url,
 						installed: installedThemes.has(theme.url),
-						card: (onPick) => (
+						card: (picked, onPick) => (
 							<ThemeCard
 								key={theme.url}
 								theme={theme}
 								installed={installedThemes.has(theme.url)}
 								downloads={downloads.get(theme.url)}
+								repositoryActive={repo.url === picked}
 								onPickRepository={onPick}
 							/>
 						),
@@ -115,8 +117,13 @@ export const MarketplaceTab = React.memo(() => {
 		repositories.some((repo) => repo.url === repository && countOf(repo) > 0)
 			? repository
 			: allRepositories;
+	// Forget a filter that fell back to all, so switching views doesn't bring it back unseen
+	React.useEffect(() => {
+		if (!loading && picked !== repository) setRepository(picked);
+	}, [loading, picked, repository]);
 	const pickedName = picked === fromUrl ? "Installed from url" : repositories.find((repo) => repo.url === picked)?.name;
-	const pickRepository = React.useCallback((url: string) => setRepository(url), []);
+	// Picking the repository that is already the filter shows all again (card chips and the repositories list)
+	const pickRepository = React.useCallback((url: string) => setRepository((current) => (current === url ? allRepositories : url)), []);
 
 	const search = query.trim().toLocaleLowerCase();
 	const downloadsOf = (item: Item) => downloads.get(item.key) ?? -1;
@@ -138,18 +145,7 @@ export const MarketplaceTab = React.memo(() => {
 				title="Marketplace"
 				subtitle={loading ? "Loading repositories…" : `${items.length} ${noun} from ${listing.length} of ${repositories.length} repositories`}
 			/>
-			<Stack direction="row" role="group" aria-label="Show" sx={{ gap: 1 }}>
-				{(["plugins", "themes"] as const).map((value) => (
-					<Button
-						key={value}
-						size="small"
-						aria-pressed={view === value}
-						sx={softButton(view === value)}
-						onClick={() => (marketplaceView._ = value)}
-						children={value === "plugins" ? "Plugins" : "Themes"}
-					/>
-				))}
-			</Stack>
+			<ViewSwitch label="Show" value={view} options={views} onChange={(next) => (marketplaceView._ = next)} />
 			<Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
 				<TextField
 					fullWidth
@@ -174,20 +170,37 @@ export const MarketplaceTab = React.memo(() => {
 					size="small"
 					startIcon={<StorageIcon />}
 					aria-expanded={showRepos}
-					aria-label={`Manage repositories (${repositories.length})`}
-					sx={softButton(showRepos)}
+					aria-label={scope ? `Repository: ${scope}. Manage repositories` : `Manage repositories (${repositories.length})`}
+					title={scope}
+					sx={{
+						...softButton(showRepos || scope !== undefined),
+						maxWidth: 280,
+						"& .luna-repo-label": { overflow: "hidden", textOverflow: "ellipsis" },
+					}}
 					onClick={() => setShowRepos(!showRepos)}
 				>
-					Repositories
-					<Box component="span" aria-hidden sx={{ marginLeft: 0.75, opacity: 0.6 }} children={repositories.length} />
+					<span className="luna-repo-label">{scope ?? "Repositories"}</span>
+					{scope === undefined && <Box component="span" aria-hidden sx={{ marginLeft: 0.75, opacity: 0.6 }} children={repositories.length} />}
 				</Button>
+				{scope !== undefined && (
+					<Button
+						size="small"
+						aria-label="Show all repositories"
+						title="Show all repositories"
+						sx={{ ...softButton(), minWidth: 0, paddingX: 1 }}
+						onClick={() => setRepository(allRepositories)}
+						children={<CloseIcon fontSize="small" />}
+					/>
+				)}
 			</Stack>
 			{showRepos && (
 				<Repositories
 					repositories={repositories}
 					view={view}
 					selected={picked}
-					onPick={(url) => setRepository(url === picked ? allRepositories : url)}
+					showFromUrl={hasFromUrl}
+					onPick={pickRepository}
+					onShowAll={() => setRepository(allRepositories)}
 				/>
 			)}
 			<Stack direction="row" sx={{ alignItems: "center", gap: 1, flexWrap: "wrap" }}>
@@ -199,37 +212,6 @@ export const MarketplaceTab = React.memo(() => {
 					onClick={() => setHideInstalled(!hideInstalled)}
 					children="Hide installed"
 				/>
-				<Select
-					variant="standard"
-					disableUnderline
-					value={picked}
-					inputProps={{ "aria-label": "Repository" }}
-					onChange={(event) => setRepository(event.target.value)}
-					renderValue={(value) => (value === allRepositories ? "All repositories" : (pickedName ?? "Unknown repository"))}
-					sx={{
-						...softButton(picked !== allRepositories),
-						fontSize: "0.8125rem",
-						maxWidth: 260,
-						"& .MuiSelect-select, & .MuiSelect-select:focus": {
-							backgroundColor: "transparent",
-							paddingY: 0.6,
-							paddingRight: "28px !important",
-							overflow: "hidden",
-							textOverflow: "ellipsis",
-						},
-						"& .MuiSelect-icon": { color: picked !== allRepositories ? "#000" : "text.secondary" },
-					}}
-					MenuProps={{ slotProps: { paper: { sx: { maxHeight: 420 } } } }}
-				>
-					<MenuItem value={allRepositories}>All repositories</MenuItem>
-					{listing.map((repo) => (
-						<MenuItem key={repo.url} value={repo.url}>
-							{repo.name ?? repo.url}
-							<Box component="span" sx={{ marginLeft: 1, opacity: 0.6 }} children={countOf(repo)} />
-						</MenuItem>
-					))}
-					{hasFromUrl && <MenuItem value={fromUrl}>Installed from url</MenuItem>}
-				</Select>
 				<Box sx={{ flexGrow: 1 }} />
 				<Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
 					<Typography id="luna-marketplace-sort" variant="body2" sx={{ color: "text.secondary", whiteSpace: "nowrap" }} children="Sort by" />
@@ -252,14 +234,11 @@ export const MarketplaceTab = React.memo(() => {
 					{!loading && <Typography variant="body2" sx={{ color: "text.secondary", flexShrink: 0 }} children={visible.length} />}
 				</Stack>
 				{!loading && !visible.length && (
-					<Typography role="status" variant="body2" sx={{ color: "text.secondary", paddingY: 4, textAlign: "center" }}>
+					<Typography role="status" variant="body2" sx={emptyStateSx}>
 						{items.length ? `No ${noun} match.` : `No repository lists ${noun} yet.`}
 					</Typography>
 				)}
-				<Box
-					sx={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: 2 }}
-					children={visible.map((item) => item.card(pickRepository))}
-				/>
+				<Box sx={cardGridSx} children={visible.map((item) => item.card(picked, pickRepository))} />
 			</Stack>
 		</Stack>
 	);

@@ -14,9 +14,12 @@ import { addToStores } from "./stores";
 const lunaStorage = ReactiveStore.getStore("@luna/storage");
 
 export const themes = await lunaStorage.getReactive<Record<string, LunaThemeStorage>>("themes", {});
-export const addToThemes = async (url: string, name?: string) => {
+/** listing: what the repository says about the theme, kept so the Installed tab can show the same card */
+export const addToThemes = async (url: string, listing?: Omit<LunaThemeStorage, "enabled" | "css">) => {
 	if (url in themes) return false;
-	const theme = (themes[url] ??= name ? { enabled: true, name } : { enabled: true });
+	// Only defined fields: the reactive store keeps what it is given
+	const info = Object.fromEntries(Object.entries(listing ?? {}).filter(([, value]) => value !== undefined));
+	const theme = (themes[url] ??= { ...info, enabled: true });
 	// Create StyleTag and load CSS immediately
 	const styleTag = (themeStyles[url] = new StyleTag(url, unloads));
 	try {

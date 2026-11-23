@@ -6,7 +6,10 @@ export type SettingsTabProps = { active: boolean };
 export type SettingsTabContent = React.ReactNode | React.ComponentType<SettingsTabProps>;
 
 export interface SettingsTab {
-	/** Unique id, also the value of the tab. Built-in ids: "Plugins", "Marketplace", "Themes", "Settings", "Supporters" */
+	/**
+	 * Unique id, also the value of the tab. Built-in ids: "Plugins" (shown as Installed), "Marketplace", "Settings", "Supporters".
+	 * Old ids still open their tab: "Plugin Store" → Marketplace, "Themes" → Installed on its Themes view.
+	 */
 	id: string;
 	label: string;
 	icon?: React.ReactElement;
@@ -29,9 +32,22 @@ const changed = () => (settingsTabsVersion._ = settingsTabsVersion._ + 1);
 /** Currently selected Luna Settings tab id */
 export const currentSettingsTab = new Signal<string>("Plugins");
 
-/** Ids of built-in tabs that were renamed, so plugins using the old id keep working (unless a plugin registered a tab with that id) */
-const renamedTabIds: Record<string, string> = { "Plugin Store": "Marketplace" };
-export const resolveTabId = (id: string) => (tabs.has(id) ? id : (renamedTabIds[id] ?? id));
+type TabAlias = {
+	/** Tab that took over the old id */
+	id: string;
+	/** Shows the part of that tab the old id stood for, e.g. its Themes view */
+	open?: () => void;
+	/** The old tab was merged into a bigger one: overriding (hiding, replacing) the old id must not change the whole new tab */
+	merged?: boolean;
+};
+/** Ids of built-in tabs that were renamed or merged, so plugins using the old id keep working (unless a plugin registered a tab with that id) */
+const tabAliases = new Map<string, TabAlias>();
+/** Internal, used by @luna/ui for its built-in tabs */
+export const addTabAlias = (oldId: string, alias: TabAlias) => tabAliases.set(oldId, alias);
+const aliasOf = (id: string) => (tabs.has(id) ? undefined : tabAliases.get(id));
+export const resolveTabId = (id: string) => aliasOf(id)?.id ?? id;
+/** Opening an old id: show the matching view of the tab that replaced it */
+export const openAlias = (id: string) => aliasOf(id)?.open?.();
 
 /** Internal, used by @luna/ui for its built-in tabs */
 export const addBuiltInSettingsTab = (tab: SettingsTab) => tabs.set(tab.id, tab);
@@ -55,6 +71,10 @@ export const SettingsTabs = {
 	 * Later overrides win. Reverted when unloads run.
 	 */
 	override(unloads: LunaUnloads, id: string, override: SettingsTabOverride) {
+		if (aliasOf(id)?.merged) {
+			console.warn(`[Luna] Settings tab "${id}" is now part of "${resolveTabId(id)}", the override is ignored`);
+			return;
+		}
 		const entry = { id: resolveTabId(id), override };
 		overrides.push(entry);
 		changed();
@@ -79,6 +99,7 @@ export const SettingsTabs = {
 	},
 	/** Switch Luna Settings to the given tab */
 	open(id: string) {
+		openAlias(id);
 		currentSettingsTab._ = resolveTabId(id);
 	},
 	/** Called with the tab id whenever the selected tab changes. Removed again when unloads run. */

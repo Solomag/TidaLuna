@@ -11,6 +11,7 @@ import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
+import Chip from "@mui/material/Chip";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 
@@ -20,6 +21,7 @@ export const version = (await pkg()).version;
 
 import { useConfirm } from "material-ui-confirm";
 import { LunaButton, LunaLink, LunaSettings, SpinningButton } from "../../components";
+import { tag } from "../styles";
 
 const REPO_URL = "https://github.com/Inrixia/TidaLuna";
 // A compare link only reads well forwards, so it is shown for newer releases only
@@ -37,15 +39,26 @@ export const LunaClientUpdate = React.memo(() => {
 	const confirm = useConfirm();
 	const [releases, setReleases] = React.useState<GitHubRelease[]>([]);
 	const [loading, setLoading] = React.useState(false);
+	const [error, setError] = React.useState<string>();
 	const [busy, setBusy] = React.useState<"updating" | "resetting" | null>(null);
 	const [selectedRelease, setSelectedRelease] = React.useState<string>(version!);
 
 	const updateReleases = async () => {
 		setLoading(true);
-		const releases = await fetchReleases().finally(() => setLoading(false));
-		setReleases(releases);
-		setSelectedRelease(releases[0].tag_name);
+		setError(undefined);
+		try {
+			const releases = await fetchReleases();
+			setReleases(releases);
+			if (releases[0] !== undefined) setSelectedRelease(releases[0].tag_name);
+		} catch (err: any) {
+			setError(err?.message ?? String(err));
+		} finally {
+			setLoading(false);
+		}
 	};
+	const latest = releases[0]?.tag_name;
+	// Until releases are fetched the picker still shows the installed version
+	const options = releases.length ? releases : [{ tag_name: selectedRelease, prerelease: false } as GitHubRelease];
 
 	React.useEffect(() => {
 		updateReleases();
@@ -76,15 +89,37 @@ export const LunaClientUpdate = React.memo(() => {
 				</DialogContent>
 			</Dialog>
 			<Stack sx={{ flex: 1 }} spacing={0.5}>
+				{/* Like lunatic-ui's picker: a compact field whose list opens under it and scrolls, instead of a page-high list over the page */}
 				<Select
 					fullWidth
-					sx={{ height: 48 }}
+					size="small"
 					value={selectedRelease}
+					disabled={loading && !releases.length}
+					inputProps={{ "aria-label": "TIDALuna version" }}
 					onChange={(e) => setSelectedRelease(e.target.value)}
-					children={releases.map((release) => {
-						return <MenuItem value={release.tag_name}>{`${release.tag_name}${release.prerelease ? "-dev" : ""}`}</MenuItem>;
-					})}
+					renderValue={(value) => (
+						<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+							<span>{value}</span>
+							{value === version && <Chip size="small" sx={tag} label="installed" />}
+							{value === latest && value !== version && <Chip size="small" color="info" sx={tag} label="latest" />}
+						</Stack>
+					)}
+					sx={{ height: 40, borderRadius: 2, "& .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(255, 255, 255, 0.15)" } }}
+					MenuProps={{
+						anchorOrigin: { vertical: "bottom", horizontal: "left" },
+						transformOrigin: { vertical: "top", horizontal: "left" },
+						slotProps: { paper: { sx: { maxHeight: "min(320px, 42vh)", marginTop: 0.5 } } },
+					}}
+					children={options.map((release) => (
+						<MenuItem key={release.tag_name} value={release.tag_name} sx={{ gap: 1 }}>
+							{release.tag_name}
+							{release.tag_name === version && <Chip size="small" sx={tag} label="installed" />}
+							{release.tag_name === latest && <Chip size="small" color="info" sx={tag} label="latest" />}
+							{release.prerelease && <Chip size="small" variant="outlined" sx={tag} label="pre-release" />}
+						</MenuItem>
+					))}
 				/>
+				{error && <Typography variant="caption" color="error" children={`Couldn't fetch releases: ${error}`} />}
 				{/* What the selected release brings, before installing it (#56) */}
 				<Typography variant="caption" sx={{ opacity: 0.8 }}>
 					<LunaLink href={`${REPO_URL}/releases/tag/${selectedRelease}`}>Release notes</LunaLink>
@@ -97,8 +132,8 @@ export const LunaClientUpdate = React.memo(() => {
 				</Typography>
 			</Stack>
 			<LunaButton
-				sx={{ height: 48 }}
-				disabled={!!busy}
+				sx={{ height: 40 }}
+				disabled={!!busy || !releases.length}
 				children={action}
 				title={desc}
 				onClick={async () => {
@@ -149,7 +184,7 @@ export const LunaClientUpdate = React.memo(() => {
 				}}
 			/>
 			<LunaButton
-				sx={{ height: 48, marginLeft: 2 }}
+				sx={{ height: 40, marginLeft: 2 }}
 				color="error"
 				disabled={!!busy}
 				children={"Factory Reset"}

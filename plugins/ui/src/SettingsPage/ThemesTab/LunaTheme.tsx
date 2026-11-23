@@ -1,23 +1,28 @@
 import React from "react";
 
-import Stack from "@mui/material/Stack";
-import Tooltip from "@mui/material/Tooltip";
+import ListItemIcon from "@mui/material/ListItemIcon";
+import MenuItem from "@mui/material/MenuItem";
 
-import { LunaSwitch, LunaTrashButton, SpinningButton } from "../../components";
+import CachedIcon from "@mui/icons-material/Cached";
 
+import type { LunaAuthor } from "@luna/core";
 import type { VoidFn } from "@inrixia/helpers";
 import { ftch } from "@luna/core";
 import { StyleTag } from "@luna/lib";
+import { LunaLink } from "../../components";
 import { unloads } from "../../index.safe";
-import { LunaPluginHeader } from "../PluginsTab/LunaPluginHeader";
+import { CardShell, previewImage } from "../MarketplaceTab/cardParts";
+import { CardActions, UninstallMenuItem } from "../PluginsTab/CardActions";
 import { themes, themeStyles } from "../Storage";
-import { cardSx } from "../styles";
 
 export type LunaThemeStorage = {
 	enabled: boolean;
 	css?: string;
-	/** Name from the repository listing it was installed from */
+	/** From the repository listing it was installed from */
 	name?: string;
+	description?: string;
+	author?: LunaAuthor | string;
+	preview?: string;
 };
 
 type LunaThemeManifest = { name?: string; description?: string; author?: string };
@@ -37,6 +42,7 @@ const fileName = (url: string) => {
 	return path.slice(path.lastIndexOf("/") + 1) || url;
 };
 
+/** Installed theme, same card as in the Marketplace: on/off switch, reload and uninstall in the menu */
 export const LunaTheme = React.memo(({ theme, url, uninstall }: { theme: LunaThemeStorage; url: string; uninstall: VoidFn }) => {
 	const [enabled, setEnabled] = React.useState(theme.enabled);
 	// Sync enabled state when prop changes (e.g., emergency disable shortcut)
@@ -46,7 +52,7 @@ export const LunaTheme = React.memo(({ theme, url, uninstall }: { theme: LunaThe
 	const [themeStyle] = React.useState(() => themeStyles[url] ?? (themeStyles[url] = new StyleTag(url, unloads)));
 	// Neptune theme manifest support
 	const [manifest, setManifest] = React.useState(() => parseManifest(theme.css));
-	// No manifest: the css file name reads better than the whole url
+	// No manifest: the repository listing, then the css file name (reads better than the whole url)
 	const name = manifest?.name ?? theme.name ?? fileName(url);
 
 	const toggleEnabled = React.useCallback((_: unknown, checked: boolean) => {
@@ -74,23 +80,36 @@ export const LunaTheme = React.memo(({ theme, url, uninstall }: { theme: LunaThe
 	}, []);
 
 	return (
-		<Stack spacing={1} data-luna-theme-card={url} sx={{ ...cardSx, paddingTop: 1.25, paddingBottom: 1.25 }}>
-			<LunaPluginHeader
-				name={name}
-				desc={manifest?.description}
-				author={manifest?.author}
-				link={url}
-				children={
-					<>
-						<Tooltip
-							title={enabled ? `Disable ${name}` : `Enable ${name}`}
-							children={<LunaSwitch checked={enabled} loading={loading} onChange={toggleEnabled} />}
-						/>
-						<SpinningButton title="Reload theme" spin={loading} disabled={loading} onClick={loadCSS} />
-						<LunaTrashButton title="Uninstall theme" onClick={uninstall} />
-					</>
-				}
-			/>
-		</Stack>
+		<CardShell
+			id={url}
+			idAttribute="data-luna-theme-card"
+			name={<LunaLink href={url} children={name} />}
+			title={url}
+			preview={previewImage(theme.preview)}
+			author={manifest?.author ?? theme.author}
+			description={manifest?.description ?? theme.description ?? fileName(url)}
+			actions={
+				<CardActions
+					name={name}
+					enabled={enabled}
+					loading={loading}
+					onToggle={toggleEnabled}
+					menu={(close) => [
+						<MenuItem
+							key="reload"
+							disabled={loading}
+							onClick={() => {
+								close();
+								void loadCSS();
+							}}
+						>
+							<ListItemIcon children={<CachedIcon fontSize="small" />} />
+							Reload theme
+						</MenuItem>,
+						<UninstallMenuItem key="uninstall" label="Uninstall theme" onClick={() => (close(), uninstall())} />,
+					]}
+				/>
+			}
+		/>
 	);
 });
