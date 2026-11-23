@@ -8,12 +8,6 @@ import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 
-import { SpinningButton } from "../../components";
-import { cardSx } from "../styles";
-import { LiveReloadToggle } from "./LiveReloadToggle";
-import { LunaPluginHeader } from "./LunaPluginHeader";
-
-import SettingsIcon from "@mui/icons-material/Settings";
 import { grey, red } from "@mui/material/colors";
 
 export class PluginSettingsErrorBoundary extends React.Component<{ name: string; children: ReactNode }, { error?: string }> {
@@ -85,58 +79,3 @@ export const usePluginState = (plugin: LunaPlugin) => {
 		link: pkg.homepage ?? pkg.repository?.url,
 	};
 };
-
-/** Core plugin in the Settings tab: header with reload buttons and its settings under it */
-export const LunaPluginSettings = React.memo(({ plugin }: { plugin: LunaPlugin }) => {
-	const { enabled, loading, loadError, installed, pkg, version, link } = usePluginState(plugin);
-	const [hideSettings, setHideSettings] = React.useState(plugin.store.hideSettings);
-	const handleReload = React.useCallback(plugin.reload.bind(plugin), [plugin]);
-
-	if (!installed) return null;
-
-	const disabled = !enabled || loading;
-	const name = pkg.name;
-	const Settings = plugin.exports?.Settings;
-	const hasSettings = Settings !== undefined && Settings !== null;
-
-	return (
-		<Stack
-			spacing={1}
-			data-luna-plugin-card={name}
-			sx={{
-				...cardSx,
-				borderColor: loadError ? "rgba(229, 115, 115, 0.7)" : cardSx.borderColor,
-				paddingTop: 1.25,
-				paddingBottom: hasSettings && !hideSettings ? 2 : 1.25,
-			}}
-		>
-			<LunaPluginHeader
-				name={name}
-				version={version}
-				link={link}
-				loadError={loadError}
-				author={pkg.author}
-				desc={pkg.description}
-				children={
-					<>
-						<SpinningButton title="Reload plugin" spin={loading} disabled={disabled} onClick={handleReload} />
-						<LiveReloadToggle plugin={plugin} disabled={disabled} sx={{ marginLeft: 1 }} />
-						<SpinningButton
-							title={hideSettings ? "Show settings" : "Hide settings"}
-							spin={loading}
-							disabled={!enabled || !hasSettings}
-							onClick={() => setHideSettings((prev) => (plugin.store.hideSettings = !prev))}
-							icon={SettingsIcon}
-							sxColor={grey.A400}
-						/>
-					</>
-				}
-			/>
-			{hasSettings && !hideSettings && (
-				<PluginSettingsErrorBoundary name={name}>
-					<Settings />
-				</PluginSettingsErrorBoundary>
-			)}
-		</Stack>
-	);
-});

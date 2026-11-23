@@ -27,7 +27,7 @@ import { NativeChip, UpdateConfirm } from "../MarketplaceTab/UpdateConfirm";
 import { displayName } from "../names";
 import { pillButton, softButton, tag } from "../styles";
 import { CardActions, UninstallMenuItem } from "./CardActions";
-import { PluginSettingsErrorBoundary, usePluginState } from "./LunaPluginSettings";
+import { PluginSettingsErrorBoundary, usePluginState } from "./pluginState";
 
 const errorBorder = "rgba(229, 115, 115, 0.7)";
 const updateBorder = "rgba(144, 202, 249, 0.6)";
@@ -62,9 +62,12 @@ const SettingsDialog = ({ plugin, name, open, onClose }: { plugin: LunaPlugin; n
 	);
 };
 
-/** Installed plugin in the Installed tab: the Marketplace card with a switch, Settings and a menu instead of Install */
+/**
+ * Installed plugin in the Installed tab: the Marketplace card with a switch, Settings and a menu instead of Install.
+ * Core plugins (Settings tab) get the same card without the switch and Uninstall, they can't be turned off.
+ */
 export const InstalledPluginCard = React.memo(
-	({ plugin, update, onUpdated }: { plugin: LunaPlugin; update?: PluginPackage; onUpdated?: (url: string) => void }) => {
+	({ plugin, update, onUpdated, core }: { plugin: LunaPlugin; update?: PluginPackage; onUpdated?: (url: string) => void; core?: boolean }) => {
 		const { enabled, loading, loadError, installed, pkg, isDev, version, link } = usePluginState(plugin);
 		const [liveReload, setLiveReload] = React.useState(plugin.liveReload);
 		React.useEffect(() => {
@@ -78,7 +81,8 @@ export const InstalledPluginCard = React.memo(
 
 		if (!installed) return null;
 
-		const name = displayName(pkg.name);
+		// Core plugins are known by their short package names (lib, ui, dev)
+		const name = core ? pkg.name : displayName(pkg.name);
 		const hasSettings = plugin.exports?.Settings !== undefined && plugin.exports?.Settings !== null;
 		const busy = !enabled || loading;
 
@@ -130,7 +134,7 @@ export const InstalledPluginCard = React.memo(
 					actions={
 						<CardActions
 							name={name}
-							enabled={enabled}
+							enabled={core ? undefined : enabled}
 							loading={loading}
 							onToggle={toggleEnabled}
 							menu={(close) => [
@@ -156,14 +160,18 @@ export const InstalledPluginCard = React.memo(
 									<ListItemIcon children={liveReload ? <SensorsIcon fontSize="small" color="success" /> : <SensorsOffIcon fontSize="small" />} />
 									{liveReload ? "Turn off live reload" : "Live reload (for development)"}
 								</MenuItem>,
-								<UninstallMenuItem
-									key="uninstall"
-									label="Uninstall (removes its settings)"
-									onClick={() => {
-										close();
-										void plugin.uninstall();
-									}}
-								/>,
+								...(core
+									? []
+									: [
+											<UninstallMenuItem
+												key="uninstall"
+												label="Uninstall (removes its settings)"
+												onClick={() => {
+													close();
+													void plugin.uninstall();
+												}}
+											/>,
+										]),
 							]}
 						>
 							{hasSettings && (

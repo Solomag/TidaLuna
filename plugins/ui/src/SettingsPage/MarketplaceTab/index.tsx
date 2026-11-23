@@ -2,6 +2,7 @@ import React from "react";
 
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import CircularProgress from "@mui/material/CircularProgress";
 import InputAdornment from "@mui/material/InputAdornment";
 import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
@@ -18,7 +19,15 @@ import { compareNames, displayName } from "../names";
 import { PageHeader } from "../PageHeader";
 import { cardGridSx, darkField, emptyStateSx, softButton } from "../styles";
 import { useSignalValue, ViewSwitch } from "../ViewSwitch";
-import { marketplaceView, useCatalog, useInstalledThemes, useInstalledVersion, useRepositoryUrls, withInstalled } from "./catalog";
+import {
+	hideInstalledInMarketplace,
+	marketplaceView,
+	useCatalog,
+	useInstalledThemes,
+	useInstalledVersion,
+	useRepositoryUrls,
+	withInstalled,
+} from "./catalog";
 import { useDownloads } from "./downloads";
 import { PluginCard } from "./PluginCard";
 import { allRepositories, fromUrl, Repositories } from "./Repositories";
@@ -55,7 +64,7 @@ const searchText = (...parts: unknown[]) =>
  */
 export const MarketplaceTab = React.memo(() => {
 	const urls = useRepositoryUrls();
-	const { repositories, entries: listed, loading } = useCatalog(urls);
+	const { repositories, entries: listed, loading, ready } = useCatalog(urls);
 	const installedVersion = useInstalledVersion();
 	const entries = React.useMemo(() => withInstalled(listed), [listed, installedVersion]);
 	const installedThemes = useInstalledThemes();
@@ -63,7 +72,7 @@ export const MarketplaceTab = React.memo(() => {
 
 	const view: View = useSignalValue(marketplaceView);
 	const [query, setQuery] = React.useState("");
-	const [hideInstalled, setHideInstalled] = React.useState(false);
+	const hideInstalled = useSignalValue(hideInstalledInMarketplace);
 	const [repository, setRepository] = React.useState(allRepositories);
 	const [sort, setSort] = React.useState<Sort>("downloads");
 	const [showRepos, setShowRepos] = React.useState(false);
@@ -209,7 +218,7 @@ export const MarketplaceTab = React.memo(() => {
 					startIcon={<VisibilityOffIcon />}
 					aria-pressed={hideInstalled}
 					sx={softButton(hideInstalled)}
-					onClick={() => setHideInstalled(!hideInstalled)}
+					onClick={() => (hideInstalledInMarketplace._ = !hideInstalled)}
 					children="Hide installed"
 				/>
 				<Box sx={{ flexGrow: 1 }} />
@@ -231,14 +240,22 @@ export const MarketplaceTab = React.memo(() => {
 			<Stack spacing={1.5}>
 				<Stack direction="row" sx={{ alignItems: "baseline", gap: 1, minWidth: 0 }}>
 					<Typography variant="h6" noWrap title={heading} sx={{ fontWeight: 700, fontSize: "1.15rem", minWidth: 0 }} children={heading} />
-					{!loading && <Typography variant="body2" sx={{ color: "text.secondary", flexShrink: 0 }} children={visible.length} />}
+					{ready && <Typography variant="body2" sx={{ color: "text.secondary", flexShrink: 0 }} children={visible.length} />}
 				</Stack>
-				{!loading && !visible.length && (
+				{ready && !visible.length && (
 					<Typography role="status" variant="body2" sx={emptyStateSx}>
 						{items.length ? `No ${noun} match.` : `No repository lists ${noun} yet.`}
 					</Typography>
 				)}
-				<Box sx={cardGridSx} children={visible.map((item) => item.card(picked, pickRepository))} />
+				{/* Until the repositories first answer, the grid would only hold installed plugins without their repository */}
+				{!ready ? (
+					<Stack role="status" direction="row" sx={{ ...emptyStateSx, justifyContent: "center", alignItems: "center", gap: 1.5 }}>
+						<CircularProgress size={18} color="inherit" />
+						<Typography variant="body2" children="Loading repositories…" />
+					</Stack>
+				) : (
+					<Box sx={cardGridSx} children={visible.map((item) => item.card(picked, pickRepository))} />
+				)}
 			</Stack>
 		</Stack>
 	);

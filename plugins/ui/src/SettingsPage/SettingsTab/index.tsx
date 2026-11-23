@@ -1,14 +1,14 @@
+import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
+import Typography from "@mui/material/Typography";
 import React from "react";
 
 import { Signal } from "@inrixia/helpers";
 
-import { LunaSettings } from "../../components";
-
 import { LunaPlugin } from "@luna/core";
 import { PageHeader } from "../PageHeader";
-import { LunaPluginSettings } from "../PluginsTab/LunaPluginSettings";
-import { sectionCardsSx } from "../styles";
+import { InstalledPluginCard } from "../PluginsTab/InstalledPluginCard";
+import { cardGridSx, sectionCardsSx } from "../styles";
 import { useSignalValue, ViewSwitch } from "../ViewSwitch";
 import { LunaCacheSettings } from "./LunaCacheSettings";
 import { LunaFeatureFlags } from "./LunaFeatureFlags";
@@ -29,26 +29,32 @@ export const SettingsTab = React.memo(() => {
 	const view = useSignalValue(settingsView);
 	const switcher = <ViewSwitch label="Show" value={view} options={views} onChange={(next) => (settingsView._ = next)} />;
 
-	const corePlugins = [];
-	for (const plugin of Object.values(LunaPlugin.plugins)) {
-		if (!LunaPlugin.corePlugins.has(plugin.name)) continue;
-		corePlugins.push(<LunaPluginSettings key={plugin.url} plugin={plugin} />);
-	}
+	const corePlugins = Object.values(LunaPlugin.plugins).filter((plugin) => LunaPlugin.corePlugins.has(plugin.name));
 	// Both stay mounted so switching back doesn't refetch releases or lose the picked version
 	return (
 		<>
 			<div hidden={view !== "general"}>
 				<Stack spacing={2} sx={{ paddingBottom: 4, ...sectionCardsSx }}>
-					<PageHeader title="Settings" subtitle="TIDALuna itself: version, backups, cache, shortcuts, permissions and core plugins" />
+					<PageHeader title="Settings" subtitle="TIDALuna itself: version, shortcuts, permissions, core plugins, cache and backups" />
 					{switcher}
 					<LunaVersionInfo />
-					<LunaSettingsTransfer />
-					<LunaCacheSettings />
 					<LunaShortcuts />
 					<LunaNativePermissions />
-					<LunaSettings title="Luna core plugins" desc="Plugins providing core luna functionality" spacing={1.5}>
-						{corePlugins}
-					</LunaSettings>
+					{/* Same cards as in the Installed tab, without the switch and Uninstall */}
+					<Stack component="section" spacing={1.5} data-luna-core-plugins>
+						<Stack spacing={0.25}>
+							<Typography variant="h6" sx={{ fontWeight: 700, fontSize: "1.15rem" }} children="Luna core plugins" />
+							<Typography variant="body2" sx={{ color: "text.secondary" }} children="Plugins providing core Luna functionality, always on" />
+						</Stack>
+						<Box sx={cardGridSx}>
+							{corePlugins.map((plugin) => (
+								<InstalledPluginCard key={plugin.url} plugin={plugin} core />
+							))}
+						</Box>
+					</Stack>
+					{/* Rarely needed, so last */}
+					<LunaCacheSettings />
+					<LunaSettingsTransfer />
 				</Stack>
 			</div>
 			<div hidden={view !== "flags"} children={<LunaFeatureFlags switcher={switcher} />} />

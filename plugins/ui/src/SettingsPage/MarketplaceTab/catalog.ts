@@ -28,6 +28,8 @@ export type Repository = {
 
 /** Which catalog the Marketplace shows, the Themes tab switches it to themes */
 export const marketplaceView = new Signal<"plugins" | "themes">("plugins");
+/** "Hide installed" in the Marketplace, kept while you visit other tabs */
+export const hideInstalledInMarketplace = new Signal(false);
 
 // Themes are css loaded into TIDAL's page, so only https (or the local dev store) is accepted
 const themeUrl = (storeUrl: string, entry: string) => {
@@ -75,7 +77,8 @@ export const hasNative = (code?: string) => code !== undefined && /__Luna\.regis
 
 const fetchRepository = async (url: string): Promise<Repository> => {
 	try {
-		const res = await fetch(`${url}/store.json`);
+		// A repository that never answers would keep the Marketplace loading
+		const res = await fetch(`${url}/store.json`, { signal: AbortSignal.timeout(15_000) });
 		if (!res.ok) throw new Error(res.statusText || `HTTP ${res.status}`);
 		const pkg: PluginPackage & { plugins?: string[]; themes?: unknown } = await res.json();
 		const repository: Repository = { url, name: pkg.name, author: pkg.author, plugins: pkg.plugins ?? [], themes: [] };
@@ -119,6 +122,8 @@ export const useCatalog = (urls: string[]) => {
 	const [repositories, setRepositories] = React.useState<Repository[]>([]);
 	const [entries, setEntries] = React.useState<CatalogEntry[]>([]);
 	const [loading, setLoading] = React.useState(true);
+	// True once the first load finished, later reloads (a repository added or removed) keep the old grid meanwhile
+	const [ready, setReady] = React.useState(false);
 
 	React.useEffect(() => {
 		let cancelled = false;
@@ -139,13 +144,14 @@ export const useCatalog = (urls: string[]) => {
 			if (cancelled) return;
 			setEntries([...byName.values()]);
 			setLoading(false);
+			setReady(true);
 		})();
 		return () => {
 			cancelled = true;
 		};
 	}, [urls]);
 
-	return { repositories, entries, loading };
+	return { repositories, entries, loading, ready };
 };
 
 /** Re-renders when any plugin is installed or uninstalled */
