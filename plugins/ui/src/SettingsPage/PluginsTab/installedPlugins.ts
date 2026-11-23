@@ -24,21 +24,20 @@ export function watchInstalledPlugins<T extends { installed: boolean; name: stri
 }
 
 /**
- * Plugins listed by stores that aren't installed, one card per plugin no matter how many stores list it.
- * A plugin whose name is installed (from any url) is left out, [DEV] copies stay separate from released ones.
+ * Plugins listed by stores that aren't installed, one card per plugin url no matter how many stores list it.
+ * A released plugin whose name is installed (from any url) is left out; [DEV] copies stay so developers can install them.
  */
-export function availablePlugins<T extends { installed: boolean; name: string; isDev: boolean }>(
+export function availablePlugins<T extends { installed: boolean; name: string; isDev: boolean; url: string }>(
 	listed: T[],
 	installed: T[],
 	core: ReadonlySet<string>,
 	descending: boolean,
 ) {
 	const installedNames = new Set(installed.map((plugin) => plugin.name));
-	const byKey = new Map<string, T>();
+	const byUrl = new Map<string, T>();
 	for (const plugin of listed) {
-		if (plugin.installed || core.has(plugin.name) || installedNames.has(plugin.name)) continue;
-		const key = `${plugin.isDev ? "dev:" : ""}${plugin.name}`;
-		if (!byKey.has(key)) byKey.set(key, plugin);
+		if (plugin.installed || core.has(plugin.name) || (!plugin.isDev && installedNames.has(plugin.name))) continue;
+		if (!byUrl.has(plugin.url)) byUrl.set(plugin.url, plugin);
 	}
-	return [...byKey.values()].sort((a, b) => (descending ? byName.compare(b.name, a.name) : byName.compare(a.name, b.name)));
+	return [...byUrl.values()].sort((a, b) => (descending ? byName.compare(b.name, a.name) : byName.compare(a.name, b.name)));
 }

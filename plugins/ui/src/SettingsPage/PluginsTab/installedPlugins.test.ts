@@ -45,15 +45,16 @@ test("matches partial names ignoring case and surrounding whitespace", () => {
 	assert.equal(matchingPluginNames(list, "store").size, 0);
 });
 
-test("lists each store plugin once, leaving out installed names and core plugins", () => {
-	const listing = (name: string, installed = false, isDev = false) => ({ name, installed, isDev });
-	const installed = [listing("Installed", true)];
-	const fromOtherStore = listing("Installed");
-	const beta = listing("beta");
-	const betaAgain = listing("beta");
-	const betaDev = listing("beta", false, true);
-	const alpha = listing("Alpha");
-	const listed = [fromOtherStore, beta, betaAgain, betaDev, listing("core"), alpha];
-	assert.deepEqual(availablePlugins(listed, installed, core, false), [alpha, beta, betaDev]);
-	assert.deepEqual(availablePlugins(listed, installed, core, true), [beta, betaDev, alpha]);
+test("lists each store plugin url once, leaving out installed names and core plugins", () => {
+	const listing = (name: string, url: string, installed = false, isDev = false) => ({ name, url, installed, isDev });
+	const installed = [listing("Installed", "a/Installed", true)];
+	const fromOtherStore = listing("Installed", "b/Installed");
+	const installedDev = listing("Installed", "dev/Installed", false, true);
+	const beta = listing("beta", "a/beta");
+	const betaAgain = listing("beta", "a/beta");
+	const betaElsewhere = listing("beta", "b/beta");
+	const alpha = listing("Alpha", "a/Alpha");
+	const listed = [fromOtherStore, installedDev, beta, betaAgain, betaElsewhere, listing("core", "a/core"), alpha];
+	assert.deepEqual(availablePlugins(listed, installed, core, false), [alpha, beta, betaElsewhere, installedDev]);
+	assert.deepEqual(availablePlugins(listed, installed, core, true), [installedDev, beta, betaElsewhere, alpha]);
 });

@@ -1,7 +1,7 @@
 import React from "react";
 import type { ErrorInfo, ReactNode } from "react";
 
-import { LunaPlugin, unloadSet, type PluginPackage } from "@luna/core";
+import { LunaPlugin, Tracer, unloadSet, type PluginPackage } from "@luna/core";
 import { store as obyStore } from "oby";
 
 import Stack from "@mui/material/Stack";
@@ -48,6 +48,8 @@ class PluginSettingsErrorBoundary extends React.Component<{ name: string; childr
 	}
 }
 
+const { trace } = Tracer("[@luna/ui]", null);
+
 // Which cards have their settings open, kept while Luna Settings is closed and reopened
 const expandedCards = new Set<string>();
 
@@ -93,7 +95,7 @@ export const LunaPluginSettings = React.memo(({ plugin }: { plugin: LunaPlugin }
 		try {
 			await plugin.install();
 		} catch (err) {
-			console.error(`[@luna/ui] Failed to install ${plugin.name}:`, err);
+			trace.msg.err.withContext(`Failed to install ${plugin.name}`)(err);
 		} finally {
 			setInstalling(false);
 		}

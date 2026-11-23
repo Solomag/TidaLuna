@@ -44,7 +44,7 @@ const fetchStore = async (url: string): Promise<StoreInfo> => {
 	}
 };
 
-// Stores load once per session, the store's reload button fetches it again
+// Stores load once per visit of Luna Settings, the store's reload button fetches it again
 const cache = new Map<string, Promise<StoreInfo>>();
 const storesVersion = new Signal(0);
 const loadStore = (url: string) => {
@@ -64,13 +64,22 @@ export const useStoreUrls = () => {
 	return urls;
 };
 
-/** Every store (the dev store first), each shown as soon as it loaded */
-export const useStores = (urls: string[]) => {
+/** Every store (the dev store first), each shown as soon as it loaded. Fetched again whenever the tab is switched back to. */
+export const useStores = (urls: string[], active: boolean) => {
 	const [version, setVersion] = React.useState(storesVersion._);
 	React.useEffect(() => {
 		const unload = storesVersion.onValue(setVersion);
 		return () => void unload();
 	}, []);
+	// Like the old Plugin Store tab, which refetched every time it was opened
+	const wasActive = React.useRef(active);
+	React.useEffect(() => {
+		if (active && !wasActive.current) {
+			cache.clear();
+			storesVersion._ = storesVersion._ + 1;
+		}
+		wasActive.current = active;
+	}, [active]);
 	const [loaded, setLoaded] = React.useState<ReadonlyMap<string, StoreInfo>>(new Map());
 	const all = React.useMemo(() => [devStoreUrl, ...urls.filter((url) => url !== devStoreUrl)], [urls]);
 	React.useEffect(() => {

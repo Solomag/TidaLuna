@@ -8,6 +8,7 @@ import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 
 import { LunaPlugin } from "@luna/core";
+import type { SettingsTabProps } from "../tabs";
 import { devStoreUrl, useStores, useStoreUrls } from "./catalog";
 import { InstallFromUrl } from "./InstallFromUrl";
 import { availablePlugins, installedPlugins, matchingPluginNames, watchInstalledPlugins } from "./installedPlugins";
@@ -18,7 +19,7 @@ import { ReloadAllPlugins } from "./ReloadAllPlugins";
 type Show = "all" | "installed" | "available";
 
 /** Installed plugins and plugins from every store in one list, a plugin isn't tied to the store it came from */
-export const PluginsTab = React.memo(() => {
+export const PluginsTab = React.memo(({ active }: SettingsTabProps) => {
 	const [query, setQuery] = React.useState("");
 	const [descending, setDescending] = React.useState(false);
 	const [show, setShow] = React.useState<Show>("all");
@@ -29,7 +30,7 @@ export const PluginsTab = React.memo(() => {
 	React.useEffect(() => watchInstalledPlugins(LunaPlugin.plugins, LunaPlugin.corePlugins, descending, setInstalled), [descending]);
 
 	const urls = useStoreUrls();
-	const { stores, loading } = useStores(urls);
+	const { stores, loading } = useStores(urls, active);
 	// The local dev store is only listed while it's running
 	const shownStores = stores.filter((store) => store.url !== devStoreUrl || !store.error);
 	const available = React.useMemo(

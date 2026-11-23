@@ -3,6 +3,7 @@ import React from "react";
 import semverGt from "semver/functions/gt";
 import semverRcompare from "semver/functions/rcompare";
 
+import { Messager } from "@luna/core";
 import { ContextMenu, ipcRenderer, safeTimeout } from "@luna/lib";
 
 import { Page } from "./classes/Page";
@@ -74,7 +75,7 @@ ipcRenderer.onOpenUrl(unloads, async (reqUrl) => {
 					confirmationText: "Add store",
 					cancellationText: "Cancel",
 				});
-				if (res.confirmed) addToStores(value);
+				if (res.confirmed && addToStores(value) !== false) Messager.Info(`Added store ${value}!`);
 			}
 			return;
 		case "settings/plugins":
