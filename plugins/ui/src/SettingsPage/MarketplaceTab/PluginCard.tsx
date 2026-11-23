@@ -15,12 +15,13 @@ import SettingsIcon from "@mui/icons-material/Settings";
 
 import { LunaAuthorDisplay } from "../../components";
 import { hasNative, type CatalogEntry } from "./catalog";
+import { hairline, pillButton, primaryButton, surface, surfaceHover, tag } from "./styles";
 
 type NativeInfo = "checking" | "unknown" | boolean | undefined;
 
 const NativeChip = ({ native }: { native: NativeInfo }) => {
 	if (native === undefined) return null;
-	if (native === "checking" || native === "unknown") return <Chip size="small" variant="outlined" label={`native: ${native}`} />;
+	if (native === "checking" || native === "unknown") return <Chip size="small" variant="outlined" sx={tag} label={`native: ${native}`} />;
 	return (
 		<Tooltip
 			title={
@@ -29,7 +30,7 @@ const NativeChip = ({ native }: { native: NativeInfo }) => {
 					: "No native module registration found in the built code"
 			}
 		>
-			<Chip size="small" variant={native ? "filled" : "outlined"} color={native ? "error" : "default"} label={native ? "native" : "no native"} />
+			<Chip size="small" variant={native ? "filled" : "outlined"} color={native ? "error" : "default"} sx={tag} label={native ? "native" : "no native"} />
 		</Tooltip>
 	);
 };
@@ -51,7 +52,7 @@ const Preview = ({ src }: { src: string }) => {
 			loading="lazy"
 			referrerPolicy="no-referrer"
 			onError={() => setFailed(true)}
-			sx={{ width: "100%", aspectRatio: "16 / 9", objectFit: "cover", borderRadius: 1, backgroundColor: "rgba(255, 255, 255, 0.06)" }}
+			sx={{ width: "100%", aspectRatio: "16 / 9", objectFit: "cover", borderRadius: 2, display: "block", backgroundColor: surface }}
 		/>
 	);
 };
@@ -70,8 +71,8 @@ const UpdateConfirm = React.memo(
 		}, [plugin, attempt]);
 		const was = hasNative(plugin.code);
 		return (
-			<Stack spacing={1} sx={{ marginTop: 1, padding: 1, borderRadius: 1, backgroundColor: "rgba(255, 255, 255, 0.06)" }}>
-				<Typography variant="body2">
+			<Stack spacing={1} sx={{ padding: 1.25, borderRadius: 2, backgroundColor: surface, border: `1px solid ${hairline}` }}>
+				<Typography variant="body2" sx={{ overflowWrap: "anywhere" }}>
 					Update <b>{plugin.name}</b> {plugin.package?.version ?? "?"} → <b>{update.version ?? "new build"}</b>
 				</Typography>
 				<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
@@ -81,10 +82,11 @@ const UpdateConfirm = React.memo(
 				{native === "unknown" && <Typography variant="caption" color="warning.main" children="Couldn't fetch the new build to check it." />}
 				{!plugin.enabled && <Typography variant="caption" sx={{ opacity: 0.8 }} children="Enable the plugin to update it." />}
 				{error && <Typography variant="caption" color="error" children={`Update failed: ${error}`} />}
-				<Stack direction="row" spacing={1}>
+				<Stack direction="row" sx={{ flexWrap: "wrap", gap: 1 }}>
 					<Button
 						size="small"
 						variant="contained"
+						sx={primaryButton}
 						disabled={busy || !plugin.enabled || typeof native !== "boolean"}
 						onClick={async () => {
 							setBusy(true);
@@ -103,8 +105,8 @@ const UpdateConfirm = React.memo(
 						}}
 						children={busy ? "Updating…" : "Update"}
 					/>
-					{native === "unknown" && <Button size="small" disabled={busy} onClick={retry} children="Retry" />}
-					<Button size="small" disabled={busy} onClick={onCancel} children="Not now" />
+					{native === "unknown" && <Button size="small" sx={pillButton} disabled={busy} onClick={retry} children="Retry" />}
+					<Button size="small" sx={{ ...pillButton, color: "text.secondary" }} disabled={busy} onClick={onCancel} children="Not now" />
 				</Stack>
 			</Stack>
 		);
@@ -145,39 +147,63 @@ export const PluginCard = React.memo(
 
 		return (
 			<Stack
-				spacing={1}
+				spacing={1.25}
 				data-luna-marketplace-plugin={plugin.name}
 				sx={{
-					padding: 1.5,
-					borderRadius: 2,
-					backgroundColor: installed ? "rgba(255, 255, 255, 0.09)" : "rgba(255, 255, 255, 0.04)",
-					boxShadow: update ? "0 0 0 1px rgba(144, 202, 249, 0.6)" : 2,
-					minHeight: 160,
+					padding: 2,
+					borderRadius: 3,
+					minWidth: 0,
+					border: "1px solid",
+					borderColor: update ? "rgba(144, 202, 249, 0.6)" : hairline,
+					backgroundColor: installed ? surfaceHover : surface,
+					transition: "background-color 120ms, border-color 120ms",
+					"&:hover": { backgroundColor: "rgba(255, 255, 255, 0.12)", borderColor: update ? "rgba(144, 202, 249, 0.8)" : "rgba(255, 255, 255, 0.18)" },
 				}}
 			>
 				{preview && <Preview key={preview} src={preview} />}
-				<Stack direction="row" spacing={1} sx={{ alignItems: "baseline" }}>
-					<Typography variant="subtitle1" sx={{ fontWeight: 600, lineHeight: 1.2, overflowWrap: "anywhere" }} children={plugin.name} />
-					{pkg?.version && <Typography variant="caption" sx={{ opacity: 0.7 }} children={pkg.version} />}
+				<Stack direction="row" spacing={1} sx={{ alignItems: "center", minWidth: 0, minHeight: 28 }}>
+					<Typography
+						variant="subtitle1"
+						noWrap
+						title={plugin.name}
+						sx={{ fontWeight: 700, lineHeight: 1.3, minWidth: 0, flexShrink: 1 }}
+						children={plugin.name}
+					/>
+					{pkg?.version && <Typography variant="caption" sx={{ color: "text.secondary", flexShrink: 0 }} children={pkg.version} />}
 					<Box sx={{ flexGrow: 1 }} />
 					{hasSettings && (
 						<Tooltip title="Plugin settings">
-							<IconButton size="small" onClick={() => onOpenSettings(plugin)} children={<SettingsIcon fontSize="small" />} />
+							<IconButton
+								size="small"
+								sx={{ flexShrink: 0, margin: -0.5, color: "text.secondary" }}
+								onClick={() => onOpenSettings(plugin)}
+								children={<SettingsIcon fontSize="small" />}
+							/>
 						</Tooltip>
 					)}
 				</Stack>
-				{pkg?.author && <LunaAuthorDisplay author={pkg.author} />}
-				<Typography
-					variant="body2"
-					sx={{ opacity: 0.8, flexGrow: 1, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}
-					children={pkg?.description}
-				/>
-				<Stack direction="row" sx={{ flexWrap: "wrap", gap: 0.5 }}>
-					{installed && <Chip size="small" variant="outlined" label="installed" sx={{ color: green[300], borderColor: green[300] }} />}
-					{update && <Chip size="small" color="info" label={`update: ${update.version ?? "new build"}`} />}
+				{pkg?.author && <Box sx={{ minWidth: 0, overflowWrap: "anywhere" }} children={<LunaAuthorDisplay author={pkg.author} />} />}
+				{/* The clamp sits in a growing box: growing the clamped text itself shows a cut 4th line */}
+				<Box sx={{ flexGrow: 1 }}>
+					<Typography
+						variant="body2"
+						sx={{
+							color: "text.secondary",
+							overflowWrap: "anywhere",
+							display: "-webkit-box",
+							WebkitLineClamp: 3,
+							WebkitBoxOrient: "vertical",
+							overflow: "hidden",
+						}}
+						children={pkg?.description}
+					/>
+				</Box>
+				<Stack direction="row" sx={{ flexWrap: "wrap", gap: 0.5, minWidth: 0 }}>
+					{installed && <Chip size="small" variant="outlined" label="installed" sx={{ ...tag, color: green[300], borderColor: green[300] }} />}
+					{update && <Chip size="small" color="info" sx={tag} label={`update: ${update.version ?? "new build"}`} />}
 					{/* Only the risky case gets a tag, like Spicetify's "external JS" */}
 					{native === true && <NativeChip native />}
-					<Chip size="small" variant="outlined" sx={{ opacity: 0.7, maxWidth: 160 }} label={repository?.name ?? "from url"} />
+					<Chip size="small" variant="outlined" sx={{ ...tag, color: "text.secondary", maxWidth: "100%" }} title={repository?.url} label={repository?.name ?? "from url"} />
 				</Stack>
 				{confirming && update ? (
 					<UpdateConfirm
@@ -190,18 +216,26 @@ export const PluginCard = React.memo(
 						}}
 					/>
 				) : (
-					<Stack direction="row" spacing={1}>
-						{update && <Button size="small" variant="contained" color="info" onClick={() => setConfirming(true)} children="Update…" />}
+					<Stack direction="row" sx={{ paddingTop: 0.5, flexWrap: "wrap", gap: 1 }}>
+						{update && <Button size="small" variant="contained" color="info" sx={pillButton} onClick={() => setConfirming(true)} children="Update…" />}
 						<Tooltip title={installed ? "Uninstall (also removes its saved settings)" : ""}>
 							<span>
 								<Button
 									size="small"
-									variant={installed ? "outlined" : "contained"}
-									color={installed ? "error" : "success"}
-									sx={installed ? { color: red[300], borderColor: red[300] } : undefined}
+									variant={installed ? "text" : "contained"}
+									sx={
+										installed
+											? {
+													...pillButton,
+													color: red[300],
+													"&:hover": { backgroundColor: "rgba(229, 115, 115, 0.12)" },
+													"&.Mui-disabled": { color: "rgba(229, 115, 115, 0.5)" },
+												}
+											: primaryButton
+									}
 									disabled={busy}
 									onClick={toggleInstall}
-									children={busy ? "…" : installed ? "Uninstall" : "Install"}
+									children={busy ? (installed ? "Removing…" : "Installing…") : installed ? "Uninstall" : "Install"}
 								/>
 							</span>
 						</Tooltip>

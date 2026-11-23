@@ -4,12 +4,15 @@ import type { LunaPlugin } from "@luna/core";
 
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import InputAdornment from "@mui/material/InputAdornment";
 import MenuItem from "@mui/material/MenuItem";
+import Select from "@mui/material/Select";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
-import ToggleButton from "@mui/material/ToggleButton";
-import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import Typography from "@mui/material/Typography";
+
+import SearchIcon from "@mui/icons-material/Search";
+import StorageIcon from "@mui/icons-material/Storage";
 
 import { SpinningButton } from "../../components";
 import { LunaPluginSettings } from "../PluginsTab/LunaPluginSettings";
@@ -17,6 +20,7 @@ import { useCatalog, useInstalledVersion, useRepositoryUrls, useUpdates, withIns
 import { useDownloads } from "./downloads";
 import { PluginCard } from "./PluginCard";
 import { Repositories } from "./Repositories";
+import { darkField, hairline, softButton, surface } from "./styles";
 
 type Filter = "all" | "installed" | "available" | "updates";
 type Sort = "downloads" | "name";
@@ -32,6 +36,15 @@ const searchText = ({ plugin, repository }: CatalogEntry) => {
 		.join(" ")
 		.toLocaleLowerCase();
 };
+
+const filterNames: Record<Filter, string> = { all: "All plugins", installed: "Installed", available: "Available", updates: "Updates" };
+
+const Section = ({ title, hint }: { title: string; hint?: string }) => (
+	<Stack direction="row" sx={{ alignItems: "baseline", gap: 1, minWidth: 0 }}>
+		<Typography variant="h6" noWrap title={title} sx={{ fontWeight: 700, fontSize: "1.15rem", minWidth: 0, flexShrink: hint ? 0 : 1 }} children={title} />
+		{hint && <Typography variant="body2" noWrap sx={{ color: "text.secondary", minWidth: 0 }} children={hint} />}
+	</Stack>
+);
 
 /**
  * Mock of a single plugins page: installed + available plugins in one grid, repositories (former stores) and updates on demand.
@@ -93,69 +106,115 @@ export const MarketplaceTab = React.memo(() => {
 			onOpenSettings={setSettingsFor}
 		/>
 	);
-	const grid = { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 1.5 };
+	const grid = { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: 2 };
 	const installedCount = entries.filter((entry) => entry.plugin.installed).length;
+	const counts: Record<Filter, number> = {
+		all: entries.length,
+		installed: installedCount,
+		available: entries.length - installedCount,
+		updates: updates.size,
+	};
 
 	return (
-		<Stack spacing={2}>
-			<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+		<Stack spacing={2.5} sx={{ paddingBottom: 4 }}>
+			<Stack spacing={0.25}>
+				<Typography variant="h5" sx={{ fontWeight: 700 }} children="Marketplace" />
+				<Typography variant="body2" sx={{ color: "text.secondary" }}>
+					{loading ? "Loading repositories…" : `${entries.length} plugins from ${repositories.length} repositories`}
+				</Typography>
+			</Stack>
+			<Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
 				<TextField
 					fullWidth
 					size="small"
 					type="search"
 					placeholder="Search plugins, authors, repositories"
-					sx={{ "& .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(255, 255, 255, 0.2)" } }}
+					sx={darkField}
 					value={query}
 					onChange={(event) => setQuery(event.target.value)}
+					slotProps={{
+						input: {
+							startAdornment: (
+								<InputAdornment position="start">
+									<SearchIcon fontSize="small" sx={{ color: "text.secondary" }} />
+								</InputAdornment>
+							),
+						},
+					}}
 				/>
 				<SpinningButton title="Check for updates" spin={checking} disabled={checking || loading} onClick={check} />
-				<Button size="small" variant={showRepos ? "contained" : "outlined"} onClick={() => setShowRepos(!showRepos)} sx={{ whiteSpace: "nowrap" }}>
-					Repositories ({repositories.length})
+				<Button
+					size="small"
+					startIcon={<StorageIcon />}
+					aria-expanded={showRepos}
+					aria-label={`Repositories (${repositories.length})`}
+					sx={softButton(showRepos)}
+					onClick={() => setShowRepos(!showRepos)}
+				>
+					Repositories
+					<Box component="span" aria-hidden sx={{ marginLeft: 0.75, opacity: 0.6 }} children={repositories.length} />
 				</Button>
 			</Stack>
 			{showRepos && <Repositories repositories={repositories} />}
-			<Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-				<ToggleButtonGroup
-					size="small"
-					exclusive
-					sx={{ "& .MuiToggleButton-root": { color: "rgba(255, 255, 255, 0.7)", borderColor: "rgba(255, 255, 255, 0.2)" } }}
-					value={filter}
-					onChange={(_, next: Filter | null) => next && setFilter(next)}
-				>
-					<ToggleButton value="all" children={`All (${entries.length})`} />
-					<ToggleButton value="installed" children={`Installed (${installedCount})`} />
-					<ToggleButton value="available" children={`Available (${entries.length - installedCount})`} />
-					<ToggleButton value="updates" children={`Updates (${updates.size})`} />
-				</ToggleButtonGroup>
+			<Stack direction="row" sx={{ alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+				<Stack direction="row" role="group" aria-label="Show" sx={{ gap: 1, flexWrap: "wrap" }}>
+					{(Object.keys(filterNames) as Filter[]).map((value) => {
+						const label = value === "all" ? "All" : filterNames[value];
+						return (
+							<Button
+								key={value}
+								size="small"
+								aria-pressed={filter === value}
+								aria-label={`${label} (${counts[value]})`}
+								sx={softButton(filter === value)}
+								onClick={() => setFilter(value)}
+							>
+								{label}
+								<Box component="span" aria-hidden sx={{ marginLeft: 0.75, opacity: 0.6 }} children={counts[value]} />
+							</Button>
+						);
+					})}
+				</Stack>
 				<Box sx={{ flexGrow: 1 }} />
-				<TextField
-					select
-					size="small"
-					label="Sort"
-					value={sort}
-					sx={{ minWidth: 170, "& .MuiSelect-icon": { color: "text.secondary" } }}
-					onChange={(event) => setSort(event.target.value as Sort)}
-				>
-					<MenuItem value="downloads">Most downloaded</MenuItem>
-					<MenuItem value="name">Name</MenuItem>
-				</TextField>
+				<Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
+					<Typography id="luna-marketplace-sort" variant="body2" sx={{ color: "text.secondary", whiteSpace: "nowrap" }} children="Sort by" />
+					<Select
+						variant="standard"
+						disableUnderline
+						labelId="luna-marketplace-sort"
+						value={sort}
+						onChange={(event) => setSort(event.target.value as Sort)}
+						sx={{ fontSize: "0.875rem", fontWeight: 600, "& .MuiSelect-icon": { color: "text.secondary" } }}
+					>
+						<MenuItem value="downloads">Most downloaded</MenuItem>
+						<MenuItem value="name">Name</MenuItem>
+					</Select>
+				</Stack>
 			</Stack>
 			{settingsFor?.installed && (
-				<Stack spacing={1} ref={settingsRef}>
-					<Button size="small" sx={{ alignSelf: "flex-start" }} onClick={() => setSettingsFor(undefined)} children="← Back to all plugins" />
+				<Stack spacing={1} ref={settingsRef} sx={{ padding: 2, borderRadius: 3, border: `1px solid ${hairline}`, backgroundColor: surface }}>
+					<Button
+						size="small"
+						sx={{ ...softButton(), alignSelf: "flex-start" }}
+						onClick={() => setSettingsFor(undefined)}
+						children="← Back to all plugins"
+					/>
 					<LunaPluginSettings plugin={settingsFor} />
 				</Stack>
 			)}
-			{loading && <Typography variant="body2" sx={{ opacity: 0.7 }} children="Loading repositories…" />}
-			{!loading && !visible.length && !popular.length && <Typography role="status" variant="body2" children="No plugins match." />}
 			{popular.length > 0 && (
-				<Stack spacing={1}>
-					<Typography variant="subtitle2" sx={{ opacity: 0.8 }} children="Popular" />
+				<Stack spacing={1.5}>
+					<Section title="Popular" hint="most downloaded, not installed yet" />
 					<Box sx={grid} children={popular.map(card)} />
-					<Typography variant="subtitle2" sx={{ opacity: 0.8, paddingTop: 1 }} children="All plugins" />
 				</Stack>
 			)}
-			<Box sx={grid} children={visible.map(card)} />
+			<Stack spacing={1.5}>
+				<Section title={search ? `Results for “${query.trim()}”${filter === "all" ? "" : ` in ${filterNames[filter]}`}` : filterNames[filter]} />
+				{!loading && !visible.length && (
+					<Typography role="status" variant="body2" sx={{ color: "text.secondary", paddingY: 4, textAlign: "center" }} children="No plugins match." />
+				)}
+				<Box sx={grid} children={visible.map(card)} />
+			</Stack>
 		</Stack>
 	);
 });
