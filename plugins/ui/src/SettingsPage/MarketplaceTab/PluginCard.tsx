@@ -32,6 +32,7 @@ const UpdateConfirm = React.memo(
 	({ plugin, update, onDone, onCancel }: { plugin: LunaPlugin; update: PluginPackage; onDone: () => void; onCancel: () => void }) => {
 		const [native, setNative] = React.useState<NativeInfo>("checking");
 		const [busy, setBusy] = React.useState(false);
+		const [error, setError] = React.useState<string>();
 		React.useEffect(() => {
 			LunaPlugin.fetchCode(plugin.url)
 				.then((code) => setNative(hasNative(code)))
@@ -47,16 +48,25 @@ const UpdateConfirm = React.memo(
 					<NativeChip native={native} />
 					{native === true && !was && <Typography variant="caption" color="warning.main" children="new: adds native code" />}
 				</Stack>
+				{!plugin.enabled && <Typography variant="caption" sx={{ opacity: 0.8 }} children="Enable the plugin to update it." />}
+				{error && <Typography variant="caption" color="error" children={`Update failed: ${error}`} />}
 				<Stack direction="row" spacing={1}>
 					<Button
 						size="small"
 						variant="contained"
-						disabled={busy}
+						disabled={busy || !plugin.enabled}
 						onClick={async () => {
 							setBusy(true);
-							// reload() fetches the new package + code and loads it, same path as today's update on startup
-							await plugin.reload().finally(() => setBusy(false));
-							onDone();
+							setError(undefined);
+							try {
+								// reload() fetches the new package + code and loads it, same path as today's update on startup
+								await plugin.reload();
+								onDone();
+							} catch (err: any) {
+								setError(err?.message ?? String(err));
+							} finally {
+								setBusy(false);
+							}
 						}}
 						children={busy ? "Updating…" : "Update"}
 					/>

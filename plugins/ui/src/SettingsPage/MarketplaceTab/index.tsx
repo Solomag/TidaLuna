@@ -12,7 +12,7 @@ import Typography from "@mui/material/Typography";
 
 import { SpinningButton } from "../../components";
 import { LunaPluginSettings } from "../PluginsTab/LunaPluginSettings";
-import { useCatalog, useInstalledVersion, useRepositoryUrls, useUpdates, type CatalogEntry } from "./catalog";
+import { useCatalog, useInstalledVersion, useRepositoryUrls, useUpdates, withInstalled, type CatalogEntry } from "./catalog";
 import { PluginCard } from "./PluginCard";
 import { Repositories } from "./Repositories";
 
@@ -33,14 +33,19 @@ const searchText = ({ plugin, repository }: CatalogEntry) => {
  */
 export const MarketplaceTab = React.memo(() => {
 	const urls = useRepositoryUrls();
-	const { repositories, entries, loading } = useCatalog(urls);
+	const { repositories, entries: listed, loading } = useCatalog(urls);
+	const installedVersion = useInstalledVersion();
+	const entries = React.useMemo(() => withInstalled(listed), [listed, installedVersion]);
 	const { updates, checking, check, applied } = useUpdates(entries);
-	useInstalledVersion();
 
 	const [query, setQuery] = React.useState("");
 	const [filter, setFilter] = React.useState<Filter>("all");
 	const [showRepos, setShowRepos] = React.useState(false);
 	const [settingsFor, setSettingsFor] = React.useState<LunaPlugin>();
+	const settingsRef = React.useRef<HTMLDivElement>(null);
+	React.useEffect(() => {
+		if (settingsFor !== undefined) settingsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+	}, [settingsFor]);
 
 	const search = query.trim().toLocaleLowerCase();
 	const visible = entries
@@ -84,7 +89,7 @@ export const MarketplaceTab = React.memo(() => {
 				<ToggleButton value="updates" children={`Updates (${updates.size})`} />
 			</ToggleButtonGroup>
 			{settingsFor?.installed && (
-				<Stack spacing={1}>
+				<Stack spacing={1} ref={settingsRef}>
 					<Button size="small" sx={{ alignSelf: "flex-start" }} onClick={() => setSettingsFor(undefined)} children="← Back to all plugins" />
 					<LunaPluginSettings plugin={settingsFor} />
 				</Stack>

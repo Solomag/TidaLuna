@@ -48,7 +48,23 @@ export const removeRepository = (url: string) => {
 	if (index > -1) storeUrls.splice(index, 1);
 };
 
-/** All plugins from every repository plus installed ones, deduped by url */
+// One card per plugin name: the same plugin can be listed by several repositories, the installed copy wins
+const addEntry = (byName: Map<string, CatalogEntry>, entry: CatalogEntry) => {
+	const existing = byName.get(entry.plugin.name);
+	if (existing === undefined || (!existing.plugin.installed && entry.plugin.installed)) byName.set(entry.plugin.name, entry);
+};
+
+/** Repository entries plus every installed plugin (also ones installed from a plain url), one per name */
+export const withInstalled = (entries: CatalogEntry[]): CatalogEntry[] => {
+	const byName = new Map<string, CatalogEntry>();
+	for (const entry of entries) addEntry(byName, entry);
+	for (const plugin of Object.values(LunaPlugin.plugins)) {
+		if (plugin.installed && !LunaPlugin.corePlugins.has(plugin.name)) addEntry(byName, { plugin });
+	}
+	return [...byName.values()];
+};
+
+/** All plugins from every repository, one per name */
 export const useCatalog = (urls: string[]) => {
 	const [repositories, setRepositories] = React.useState<Repository[]>([]);
 	const [entries, setEntries] = React.useState<CatalogEntry[]>([]);
@@ -61,24 +77,15 @@ export const useCatalog = (urls: string[]) => {
 			const repos = (await Promise.all([devStoreUrl, ...urls].map(fetchRepository))).filter((repo) => repo.url !== devStoreUrl || !repo.error);
 			if (cancelled) return;
 			setRepositories(repos);
-			// One card per plugin name: the same plugin can be listed by several repositories, the installed copy wins
 			const byName = new Map<string, CatalogEntry>();
-			const add = (entry: CatalogEntry) => {
-				const existing = byName.get(entry.plugin.name);
-				if (existing === undefined || (!existing.plugin.installed && entry.plugin.installed)) byName.set(entry.plugin.name, entry);
-			};
 			await Promise.all(
 				repos.flatMap((repository) =>
 					repository.plugins.map(async (entry) => {
 						const plugin = await LunaPlugin.fromStorage({ url: LunaPlugin.storePluginUrl(repository.url, entry) }).catch(() => undefined);
-						if (plugin !== undefined) add({ plugin, repository });
+						if (plugin !== undefined) addEntry(byName, { plugin, repository });
 					}),
 				),
 			);
-			// Installed from a plain url, not listed in any repository
-			for (const plugin of Object.values(LunaPlugin.plugins)) {
-				if (plugin.installed && !LunaPlugin.corePlugins.has(plugin.name)) add({ plugin });
-			}
 			if (cancelled) return;
 			setEntries([...byName.values()]);
 			setLoading(false);
@@ -112,20 +119,27 @@ export const useInstalledVersion = () => {
 export const useUpdates = (entries: CatalogEntry[]) => {
 	const [updates, setUpdates] = React.useState<Map<string, PluginPackage>>(new Map());
 	const [checking, setChecking] = React.useState(false);
+	const run = React.useRef(0);
+	const installed = entries.filter(({ plugin }) => plugin.installed && !plugin.isDev).map(({ plugin }) => plugin);
+	const latest = React.useRef(installed);
+	latest.current = installed;
+	// Check again only when the set of installed plugins changes, not on every catalog re-render
+	const installedKey = installed.map((plugin) => plugin.url).join("\n");
 	const check = React.useCallback(async () => {
+		const current = ++run.current;
 		setChecking(true);
 		const next = new Map<string, PluginPackage>();
 		await Promise.all(
-			entries
-				.filter(({ plugin }) => plugin.installed && !plugin.isDev)
-				.map(async ({ plugin }) => {
-					const remote = await LunaPlugin.fetchPackage(plugin.url).catch(() => undefined);
-					if (remote !== undefined && remote.hash !== plugin.package?.hash) next.set(plugin.url, remote);
-				}),
+			latest.current.map(async (plugin) => {
+				const remote = await LunaPlugin.fetchPackage(plugin.url).catch(() => undefined);
+				if (remote !== undefined && remote.hash !== plugin.package?.hash) next.set(plugin.url, remote);
+			}),
 		);
+		// A newer check started meanwhile, its result wins
+		if (current !== run.current) return;
 		setUpdates(next);
 		setChecking(false);
-	}, [entries]);
+	}, [installedKey]);
 	React.useEffect(() => void check(), [check]);
 	const applied = React.useCallback((url: string) => setUpdates((prev) => new Map([...prev].filter(([key]) => key !== url))), []);
 	return { updates, checking, check, applied };
