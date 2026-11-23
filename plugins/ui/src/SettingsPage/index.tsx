@@ -8,10 +8,8 @@ import ExtensionIcon from "@mui/icons-material/Extension";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import PaletteIcon from "@mui/icons-material/Palette";
 import SettingsIcon from "@mui/icons-material/Settings";
-import StorefrontIcon from "@mui/icons-material/Storefront";
 
 import { PluginsTab } from "./PluginsTab";
-import { PluginStoreTab } from "./PluginStoreTab";
 import { SettingsTab } from "./SettingsTab";
 import { SupportersTab } from "./SupportersTab";
 import { addBuiltInSettingsTab, currentSettingsTab, SettingsTabs, settingsTabsVersion, type SettingsTab as SettingsTabDef } from "./tabs";
@@ -21,8 +19,8 @@ export { currentSettingsTab, SettingsTabs } from "./tabs";
 export type { SettingsTab as SettingsTabDefinition, SettingsTabContent, SettingsTabOverride, SettingsTabProps } from "./tabs";
 
 // keepAlive: the most used tab (plugin settings), so switching back to it doesn't re-render every plugin's settings
+// Plugins also lists every store's plugins, the old "Plugin Store" tab id opens it
 addBuiltInSettingsTab({ id: "Plugins", label: "Plugins", icon: <ExtensionIcon />, order: 100, content: <PluginsTab />, keepAlive: true });
-addBuiltInSettingsTab({ id: "Plugin Store", label: "Plugin Store", icon: <StorefrontIcon />, order: 200, content: <PluginStoreTab /> });
 addBuiltInSettingsTab({ id: "Themes", label: "Themes", icon: <PaletteIcon />, order: 300, content: <ThemesTab /> });
 addBuiltInSettingsTab({ id: "Settings", label: "Settings", icon: <SettingsIcon />, order: 400, content: <SettingsTab /> });
 addBuiltInSettingsTab({ id: "Supporters", label: "Supporters", icon: <FavoriteIcon />, order: 500, content: <SupportersTab /> });
@@ -61,7 +59,8 @@ export const LunaPage = React.memo(() => {
 
 	const tabs = SettingsTabs.list().filter((tab) => !tab.hidden);
 	// If the selected tab was removed or hidden fall back to the first tab
-	const selected = tabs.some((tab) => tab.id === currentTab) ? currentTab : tabs[0]?.id;
+	const wanted = currentTab === "Plugin Store" ? "Plugins" : currentTab;
+	const selected = tabs.some((tab) => tab.id === wanted) ? wanted : tabs[0]?.id;
 	// The tab bar follows selected straight away, content renders as an interruptible transition so a heavy tab doesn't drop frames
 	const shown = React.useDeferredValue(selected);
 	// Keep currentSettingsTab (and onChange listeners) in sync with the fallback

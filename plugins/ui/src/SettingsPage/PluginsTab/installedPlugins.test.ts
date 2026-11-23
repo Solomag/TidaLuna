@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { store } from "oby";
-import { installedPlugins, matchingPluginNames, watchInstalledPlugins } from "./installedPlugins";
+import { availablePlugins, installedPlugins, matchingPluginNames, watchInstalledPlugins } from "./installedPlugins";
 
 const item = (name: string, installed = true) => ({ name, installed });
 const z = item("Zulu");
@@ -43,4 +43,17 @@ test("matches partial names ignoring case and surrounding whitespace", () => {
 	assert.deepEqual([...matchingPluginNames(list, "  LP  ")], [a]);
 	assert.deepEqual([...matchingPluginNames(list, "   ")], [z, a]);
 	assert.equal(matchingPluginNames(list, "store").size, 0);
+});
+
+test("lists each store plugin once, leaving out installed names and core plugins", () => {
+	const listing = (name: string, installed = false, isDev = false) => ({ name, installed, isDev });
+	const installed = [listing("Installed", true)];
+	const fromOtherStore = listing("Installed");
+	const beta = listing("beta");
+	const betaAgain = listing("beta");
+	const betaDev = listing("beta", false, true);
+	const alpha = listing("Alpha");
+	const listed = [fromOtherStore, beta, betaAgain, betaDev, listing("core"), alpha];
+	assert.deepEqual(availablePlugins(listed, installed, core, false), [alpha, beta, betaDev]);
+	assert.deepEqual(availablePlugins(listed, installed, core, true), [beta, betaDev, alpha]);
 });

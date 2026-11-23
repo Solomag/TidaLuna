@@ -6,7 +6,7 @@ export type SettingsTabProps = { active: boolean };
 export type SettingsTabContent = React.ReactNode | React.ComponentType<SettingsTabProps>;
 
 export interface SettingsTab {
-	/** Unique id, also the value of the tab. Built-in ids: "Plugins", "Plugin Store", "Themes", "Settings", "Supporters" */
+	/** Unique id, also the value of the tab. Built-in ids: "Plugins", "Themes", "Settings", "Supporters" */
 	id: string;
 	label: string;
 	icon?: React.ReactElement;

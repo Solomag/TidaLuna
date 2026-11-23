@@ -9,7 +9,7 @@ import { StyleTag } from "@luna/lib";
 import { Messager } from "@luna/core";
 import type { LunaThemeStorage } from "./ThemesTab/LunaTheme";
 import { unloads } from "../index.safe";
-import { addToStores } from "./PluginStoreTab";
+import { addToStores } from "./stores";
 
 const lunaStorage = ReactiveStore.getStore("@luna/storage");
 

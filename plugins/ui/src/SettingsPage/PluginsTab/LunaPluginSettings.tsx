@@ -16,7 +16,6 @@ import { LunaSwitch, LunaTrashButton, SpinningButton } from "../../components";
 import { LiveReloadToggle } from "./LiveReloadToggle";
 import { LunaPluginHeader } from "./LunaPluginHeader";
 
-import SettingsIcon from "@mui/icons-material/Settings";
 import { grey, red } from "@mui/material/colors";
 
 class PluginSettingsErrorBoundary extends React.Component<{ name: string; children: ReactNode }, { error?: string }> {
@@ -49,6 +48,10 @@ class PluginSettingsErrorBoundary extends React.Component<{ name: string; childr
 	}
 }
 
+// Which cards have their settings open, kept while Luna Settings is closed and reopened
+const expandedCards = new Set<string>();
+
+/** A plugin card: installed plugins get their controls and settings (opened in the card), others an Install button */
 export const LunaPluginSettings = React.memo(({ plugin }: { plugin: LunaPlugin }) => {
 	// Have to wrap in function call as Settings is a functional component
 	// A new card can mount before install() finishes enabling the plugin.
@@ -57,8 +60,10 @@ export const LunaPluginSettings = React.memo(({ plugin }: { plugin: LunaPlugin }
 	const loading = React.useSyncExternalStore(subscribeLoading, () => plugin.loading._);
 	const [loadError, setLoadError] = React.useState(plugin.loadError._);
 	const [installed, setInstalled] = React.useState(plugin.installed);
-	const [hideSettings, setHideSettings] = React.useState(plugin.store.hideSettings);
-	const [collapsed, setCollapsed] = React.useState(false);
+	const [installing, setInstalling] = React.useState(false);
+	const [expanded, setExpanded] = React.useState(() => expandedCards.has(plugin.url));
+	// Settings mount on first expand and stay mounted while collapsed, so they keep their state
+	const [settingsMounted, setSettingsMounted] = React.useState(expanded);
 
 	const [pkg, setPackage] = React.useState<PluginPackage>(obyStore.unwrap(plugin.store.package));
 
@@ -83,24 +88,38 @@ export const LunaPluginSettings = React.memo(({ plugin }: { plugin: LunaPlugin }
 	const handleReload = React.useCallback(plugin.reload.bind(plugin), [plugin]);
 	const toggleEnabled = React.useCallback((_: unknown, checked: boolean) => (checked ? plugin.enable() : plugin.disable()), [plugin]);
 	const uninstall = React.useCallback(plugin.uninstall.bind(plugin), [plugin]);
-
-	if (!installed) return null;
+	const install = React.useCallback(async () => {
+		setInstalling(true);
+		try {
+			await plugin.install();
+		} catch (err) {
+			console.error(`[@luna/ui] Failed to install ${plugin.name}:`, err);
+		} finally {
+			setInstalling(false);
+		}
+	}, [plugin]);
+	const toggleExpanded = React.useCallback(() => {
+		const next = !expandedCards.has(plugin.url);
+		if (next) expandedCards.add(plugin.url);
+		else expandedCards.delete(plugin.url);
+		setExpanded(next);
+		setSettingsMounted(true);
+	}, [plugin]);
 
 	const disabled = !enabled || loading;
-
-	const isDev = plugin.store.url.startsWith("http://127.0.0.1");
 
 	const author = pkg.author;
 	const desc = pkg.description;
 	const name = pkg.name;
 	const link = pkg.homepage ?? pkg.repository?.url;
-	let version = isDev ? `${pkg.version ?? ""} [DEV]` : pkg.version;
+	const version = plugin.isDev ? `${pkg.version ?? ""} [DEV]` : pkg.version;
 
 	// Dont allow disabling core plugins
 	const isCore = LunaPlugin.corePlugins.has(name);
 
 	const Settings = plugin.exports?.Settings;
-	const hasSettings = Settings !== undefined && Settings !== null;
+	const hasSettings = installed && Settings !== undefined && Settings !== null;
+	const open = hasSettings && expanded;
 
 	return (
 		<Stack
@@ -111,7 +130,7 @@ export const LunaPluginSettings = React.memo(({ plugin }: { plugin: LunaPlugin }
 				boxShadow: loadError ? "0 0 10px rgba(255, 0, 0, 0.70)" : "none",
 				padding: 2,
 				paddingTop: 1,
-				paddingBottom: hasSettings || hideSettings ? 2 : 1,
+				paddingBottom: open ? 2 : 1,
 			}}
 		>
 			<LunaPluginHeader
@@ -119,46 +138,44 @@ export const LunaPluginSettings = React.memo(({ plugin }: { plugin: LunaPlugin }
 				version={version}
 				link={link}
 				loadError={loadError}
-				author={collapsed ? undefined : author}
-				desc={collapsed ? undefined : desc}
+				author={author}
+				desc={desc}
 				children={
-					<>
-						<IconButton
-							color="primary"
-							size="small"
-							aria-label={`${collapsed ? "Expand" : "Collapse"} ${name}`}
-							aria-expanded={!collapsed}
-							onClick={() => setCollapsed(!collapsed)}
-						>
-							{collapsed ? <ExpandMoreIcon /> : <ExpandLessIcon />}
-						</IconButton>
-						{!collapsed && (
-							<>
-								{!isCore && (
-									<Tooltip
-										title={enabled ? `Disable ${name}` : `Enable ${name}`}
-										children={<LunaSwitch checked={enabled} loading={loading} onChange={toggleEnabled} />}
-									/>
-								)}
-								<SpinningButton title="Reload plugin" spin={loading} disabled={disabled} onClick={handleReload} />
-								<LiveReloadToggle plugin={plugin} disabled={disabled} sx={{ marginLeft: 1 }} />
-								<SpinningButton
-									title={hideSettings ? "Show settings" : "Hide settings"}
-									spin={loading}
-									disabled={!enabled || !hasSettings}
-									onClick={() => setHideSettings((prev) => (plugin.store.hideSettings = !prev))}
-									icon={SettingsIcon}
-									sxColor={grey.A400}
+					installed ? (
+						<>
+							{!isCore && (
+								<Tooltip
+									title={enabled ? `Disable ${name}` : `Enable ${name}`}
+									children={<LunaSwitch checked={enabled} loading={loading} onChange={toggleEnabled} />}
 								/>
-								{/* Don't show uninstall button for core plugins */}
-								{!isCore && <LunaTrashButton title="Uninstall plugin" onClick={uninstall} />}
-							</>
-						)}
-					</>
+							)}
+							<SpinningButton title="Reload plugin" spin={loading} disabled={disabled} onClick={handleReload} />
+							<LiveReloadToggle plugin={plugin} disabled={disabled} sx={{ marginLeft: 1 }} />
+							{/* Don't show uninstall button for core plugins */}
+							{!isCore && <LunaTrashButton title="Uninstall plugin" onClick={uninstall} />}
+							{hasSettings && (
+								<Tooltip title={expanded ? "Hide settings" : "Show settings"}>
+									<IconButton
+										color="primary"
+										size="small"
+										aria-label={`${expanded ? "Hide" : "Show"} ${name} settings`}
+										aria-expanded={expanded}
+										onClick={toggleExpanded}
+									>
+										{expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+									</IconButton>
+								</Tooltip>
+							)}
+						</>
+					) : (
+						<Button size="small" variant="outlined" color="success" disabled={installing} onClick={install}>
+							{installing ? "Installing..." : "Install"}
+						</Button>
+					)
 				}
 			/>
-			{hasSettings && !hideSettings && (
-				<div hidden={collapsed}>
+			{hasSettings && settingsMounted && (
+				<div hidden={!expanded}>
 					<PluginSettingsErrorBoundary name={name}>
 						<Settings />
 					</PluginSettingsErrorBoundary>

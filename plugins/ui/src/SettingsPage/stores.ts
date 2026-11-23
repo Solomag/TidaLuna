@@ -1,14 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
-
-import { store as obyStore } from "oby";
-
 import { LunaPlugin, ReactiveStore } from "@luna/core";
-
-import Stack from "@mui/material/Stack";
-import TextField from "@mui/material/TextField";
-
-import { InstallFromUrl } from "./InstallFromUrl";
-import { LunaStore } from "./LunaStore";
 
 const pluginStores = ReactiveStore.getStore("@luna/pluginStores");
 export const storeUrls = await pluginStores.getReactive<string[]>("storeUrls", []);
@@ -64,34 +54,9 @@ addToStores("https://github.com/pimull/tidaluna-album-editions/releases/latest/d
 addToStores("https://github.com/Solomag/lunatic-ui/releases/download/latest/store.json");
 addToStores("https://github.com/Fuchs-Fox/lunajam/releases/download/latest/store.json");
 
-export const PluginStoreTab = React.memo(() => {
-	const [_storeUrls, setPluginStores] = useState<string[]>(obyStore.unwrap(storeUrls));
-	const [searchQuery, setSearchQuery] = useState("");
-
-	useEffect(() => obyStore.on(storeUrls, () => setPluginStores([...obyStore.unwrap(storeUrls)])), []);
-	const onRemove = useCallback((storeUrl: string) => {
-		const index = storeUrls.indexOf(storeUrl);
-		if (index > -1) storeUrls.splice(index, 1);
-	}, []);
-
-	return (
-		<Stack spacing={2}>
-			<Stack direction="row" spacing={2}>
-				<InstallFromUrl />
-				<TextField
-					fullWidth
-					size="small"
-					placeholder="Search plugins..."
-					value={searchQuery}
-					onChange={(e) => setSearchQuery(e.target.value)}
-				/>
-			</Stack>
-			<LunaStore url={"http://127.0.0.1:3000"} onRemove={() => {}} searchQuery={searchQuery} />
-			{_storeUrls.map((store) => (
-				<LunaStore key={store} url={store} onRemove={() => onRemove(store)} searchQuery={searchQuery} />
-			))}
-		</Stack>
-	);
-});
-
 export const { normalizeStoreUrl } = LunaPlugin;
+
+export const removeStore = (url: string) => {
+	const index = storeUrls.indexOf(url);
+	if (index > -1) storeUrls.splice(index, 1);
+};
