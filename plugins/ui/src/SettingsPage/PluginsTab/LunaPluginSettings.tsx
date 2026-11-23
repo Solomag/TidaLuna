@@ -93,7 +93,9 @@ export const LunaPluginSettings = React.memo(({ plugin }: { plugin: LunaPlugin }
 	const install = React.useCallback(async () => {
 		setInstalling(true);
 		try {
-			await plugin.install();
+			// Uninstall drops a plugin from LunaPlugin.plugins, a store's copy of it can be stale: install the registered instance
+			const target = await LunaPlugin.fromStorage({ url: plugin.url });
+			await target.install();
 		} catch (err) {
 			trace.msg.err.withContext(`Failed to install ${plugin.name}`)(err);
 		} finally {
