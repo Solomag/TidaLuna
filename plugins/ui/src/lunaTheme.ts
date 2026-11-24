@@ -1,12 +1,12 @@
 import type { LunaUnloads } from "@luna/core";
 import { Signal } from "@inrixia/helpers";
-import { grey } from "@mui/material/colors";
 import { createTheme, ThemeProvider, type Theme, type ThemeOptions } from "@mui/material/styles";
 import React from "react";
 
 import type { LunaSettingProps } from "./components/settings/LunaSetting";
 import type { LunaStackProps } from "./components/LunaStack";
 import type { LunaTitleProps } from "./components/LunaTitle";
+import { rowDescStyles, rowTitleStyles, wave } from "./wave";
 
 declare module "@mui/material/styles" {
 	interface TypographyVariants {
@@ -48,41 +48,36 @@ declare module "@mui/material/Typography" {
 	}
 }
 
-const defaultTheme = createTheme();
-
+// MUI needs real colours here to derive hovers and contrasts, so these are TIDAL's values; component styles use the wave variables
 export const lunaMuiTheme = createTheme({
 	palette: {
 		// TIDAL is dark: light mode drew disabled buttons, field outlines and dividers in black on the dark page
 		mode: "dark",
 		primary: {
-			main: grey.A200,
+			main: "#fff",
 		},
 		secondary: {
 			main: "#31d8ff",
 		},
 		text: {
-			primary: grey.A200,
-			// Grey
-			secondary: "#a7a7a9",
+			primary: "#fff",
+			secondary: "#afafb6",
 		},
+		background: {
+			default: "#000",
+			paper: "#18181b",
+		},
+		divider: "#242429",
 	},
 	typography: {
-		h7: {
-			...defaultTheme.typography.h6,
-			fontSize: "1.2rem",
-		},
-		h8: {
-			...defaultTheme.typography.h6,
-			fontSize: "1.075rem",
-		},
-		h9: {
-			...defaultTheme.typography.h6,
-			fontSize: "1.05rem",
-		},
-		subtitle2: {
-			...defaultTheme.typography.subtitle2, // Inherit default subtitle2 styles
-			color: grey.A400, // Override the color
-		},
+		// TIDAL's own font (Square Sans) from the page
+		fontFamily: "inherit",
+		// Section headings, like TIDAL's Settings sections
+		h7: { fontFamily: "inherit", fontSize: 16, fontWeight: 600, lineHeight: "24px" },
+		// Setting titles
+		h8: { fontFamily: "inherit", ...rowTitleStyles },
+		h9: { fontFamily: "inherit", ...rowTitleStyles },
+		subtitle2: { ...rowDescStyles, fontFamily: "inherit" },
 	},
 	components: {
 		MuiTabs: {
@@ -99,6 +94,9 @@ export const lunaMuiTheme = createTheme({
 			styleOverrides: {
 				root: ({ theme }) => ({
 					minHeight: 0,
+					// Sentence case and semibold, like TIDAL's tabs
+					textTransform: "none",
+					fontWeight: 600,
 					// Target the icon specifically for color changes
 
 					transition: theme.transitions.create("color", {
@@ -122,49 +120,106 @@ export const lunaMuiTheme = createTheme({
 				}),
 			},
 		},
+		// TIDAL's switch: 42x26 track, light when on and dark grey when off, black 18px thumb
 		MuiSwitch: {
 			styleOverrides: {
 				root: {
-					padding: 7,
+					width: 42,
+					height: 26,
+					padding: 0,
 				},
 				switchBase: {
-					// Styles for the switch thumb when unchecked
-					"& + .MuiSwitch-track": {
-						opacity: 0.5,
-					},
-					// Styles for the switch thumb when checked
+					padding: 4,
+					color: wave.baseFill,
+					transitionDuration: "150ms",
+					"&:hover": { backgroundColor: "transparent" },
 					"&.Mui-checked": {
-						// Need to target the track specifically when checked
-						"& + .MuiSwitch-track": {
-							opacity: 1,
-						},
+						transform: "translateX(16px)",
+						color: wave.baseFill,
+						"&:hover": { backgroundColor: "transparent" },
+						"& + .MuiSwitch-track": { backgroundColor: wave.contrastDark, opacity: 1 },
 					},
+					// Inside the track: the root clips, and must, since MUI's hidden input is three times as wide as the thumb
+					"&.Mui-focusVisible + .MuiSwitch-track": { boxShadow: `inset 0 0 0 2px ${wave.contrastDarker}` },
+					"&.Mui-disabled + .MuiSwitch-track": { opacity: 0.5 },
+					"&.Mui-checked.Mui-disabled + .MuiSwitch-track": { opacity: 0.5 },
+				},
+				thumb: {
+					width: 18,
+					height: 18,
+					boxShadow: "none",
 				},
 				track: {
-					// General track styles
+					borderRadius: 13,
+					backgroundColor: wave.baseBrightest,
 					opacity: 1,
-					borderRadius: 12,
+				},
+			},
+		},
+		// Fields and selects: dark grey fill without an outline, like TIDAL's selects
+		MuiOutlinedInput: {
+			styleOverrides: {
+				root: {
+					borderRadius: 8,
+					backgroundColor: wave.baseBright,
+					// A faint frame, so fields stay visible on the rows' fill of the same grey
+					"& .MuiOutlinedInput-notchedOutline": { borderColor: wave.baseBrighter },
+					"&:hover .MuiOutlinedInput-notchedOutline": { borderColor: wave.baseBrightest },
+					"&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: wave.contrastDarker, borderWidth: 1 },
+				},
+			},
+		},
+		MuiInputBase: {
+			styleOverrides: {
+				input: {
+					// TIDAL's page styles make search inputs border-box, which squeezed MUI's search fields to 20px
+					"&[type=search]": { boxSizing: "content-box" },
 				},
 			},
 		},
 		MuiSelect: {
 			styleOverrides: {
 				select: {
-					backgroundColor: "rgba(0, 0, 0, 0.20)",
+					fontWeight: 600,
+				},
+			},
+		},
+		// Rounded buttons in sentence case, like TIDAL's
+		MuiButton: {
+			styleOverrides: {
+				root: {
+					textTransform: "none",
+					borderRadius: 1000,
+					fontWeight: 600,
+					boxShadow: "none",
+					"&:hover": { boxShadow: "none" },
 				},
 			},
 		},
 		MuiMenu: {
 			styleOverrides: {
 				paper: {
-					backgroundColor: grey[900],
+					backgroundColor: wave.baseBrighter,
+					borderRadius: 8,
 				},
 			},
 		},
 		MuiPaper: {
 			styleOverrides: {
 				root: {
-					backgroundColor: grey[900],
+					backgroundColor: wave.baseBright,
+					// Dark mode lightens raised paper with a white overlay, TIDAL's surfaces are flat
+					backgroundImage: "none",
+				},
+			},
+		},
+		// Dialogs on TIDAL's black, so settings panels inside look like the Settings page
+		MuiDialog: {
+			styleOverrides: {
+				paper: {
+					backgroundColor: wave.baseFill,
+					border: `1px solid ${wave.baseBrighter}`,
+					borderRadius: 16,
 				},
 			},
 		},

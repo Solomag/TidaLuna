@@ -1,6 +1,5 @@
 import React from "react";
 
-import Box from "@mui/material/Box";
 import ButtonBase from "@mui/material/ButtonBase";
 import Chip from "@mui/material/Chip";
 import Stack from "@mui/material/Stack";
@@ -60,7 +59,7 @@ export const Repositories = React.memo(
 				sx={{ color: "text.secondary" }}
 				children="Add a repository (store.json url), or install a single plugin or theme (.css) by url:"
 			/>
-			<Box sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2, backgroundColor: "rgba(255, 255, 255, 0.08)" } }} children={<InstallFromUrl />} />
+			<InstallFromUrl />
 			<Typography
 				variant="caption"
 				sx={{ color: "text.secondary" }}

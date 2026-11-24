@@ -3,6 +3,8 @@ import { styled, useThemeProps } from "@mui/material/styles";
 import Typography, { type TypographyProps } from "@mui/material/Typography";
 import React from "react";
 
+import { rowDescStyles } from "../wave";
+
 export type LunaTitleValues = {
 	title: React.ReactNode;
 	desc?: React.ReactNode;
@@ -13,7 +15,7 @@ export type LunaTitleProps = Omit<TypographyProps, "title"> & LunaTitleValues;
 // Themeable via theme.components.LunaTitle, stable classes LunaTitle-root/-title/-desc
 const TitleRoot = styled(Box, { name: "LunaTitle", slot: "Root" })({});
 const TitleText = styled(Typography, { name: "LunaTitle", slot: "Title" })({});
-const TitleDesc = styled(Typography, { name: "LunaTitle", slot: "Desc" })({});
+const TitleDesc = styled(Typography, { name: "LunaTitle", slot: "Desc" })({ ...rowDescStyles, marginTop: 2, marginBottom: 0 });
 
 export const LunaTitle = React.memo((inProps: LunaTitleProps) => {
 	const props = useThemeProps({ props: inProps, name: "LunaTitle" });
@@ -26,7 +28,7 @@ export const LunaTitle = React.memo((inProps: LunaTitleProps) => {
 					{children}
 				</Box>
 			</TitleText>
-			{desc && <TitleDesc className="LunaTitle-desc" variant="subtitle2" gutterBottom children={desc} />}
+			{desc && <TitleDesc className="LunaTitle-desc" variant="subtitle2" children={desc} />}
 		</TitleRoot>
 	);
 });

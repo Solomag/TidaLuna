@@ -7,7 +7,7 @@ export const LunaVersionInfo = React.memo(() => {
 
 	return (
 		<LunaSettings>
-			<div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 8 }}>
+			<div style={{ display: "flex", alignItems: "center", gap: 16 }}>
 				<img src="https://desktop.tidal.com/assets/appIcon-C2Av_5S7.png" alt="" style={{ width: 56, height: 56, borderRadius: 14 }} />
 				<div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
 					<div style={{ fontSize: 20, fontWeight: 700 }}>Thanks for using TIDALuna!</div>

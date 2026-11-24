@@ -7,7 +7,7 @@ import TextField from "@mui/material/TextField";
 import SearchIcon from "@mui/icons-material/Search";
 
 import { PageHeader } from "../PageHeader";
-import { darkField, sectionCardsSx } from "../styles";
+import { darkField } from "../styles";
 import { GitHubContributors } from "./GitHubContributors";
 import { GitHubSponsors } from "./GitHubSponsors";
 import { GitHubStars } from "./GitHubStars";
@@ -16,7 +16,7 @@ import { SupportersQuery } from "./UserList";
 export const SupportersTab = React.memo(() => {
 	const [query, setQuery] = React.useState("");
 	return (
-		<Stack spacing={2} sx={{ paddingBottom: 4, ...sectionCardsSx }}>
+		<Stack spacing={4} sx={{ paddingBottom: 4 }}>
 			<PageHeader title="Supporters" subtitle="The people who keep TIDALuna going ❤️" />
 			<TextField
 				fullWidth

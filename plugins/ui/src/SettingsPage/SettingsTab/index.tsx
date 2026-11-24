@@ -8,7 +8,7 @@ import { Signal } from "@inrixia/helpers";
 import { LunaPlugin } from "@luna/core";
 import { PageHeader } from "../PageHeader";
 import { InstalledPluginCard } from "../PluginsTab/InstalledPluginCard";
-import { cardGridSx, sectionCardsSx } from "../styles";
+import { cardGridSx } from "../styles";
 import { useSignalValue, ViewSwitch } from "../ViewSwitch";
 import { LunaCacheSettings } from "./LunaCacheSettings";
 import { LunaFeatureFlags } from "./LunaFeatureFlags";
@@ -35,7 +35,7 @@ export const SettingsTab = React.memo(() => {
 	return (
 		<>
 			<div hidden={view !== "general"}>
-				<Stack spacing={2} sx={{ paddingBottom: 4, ...sectionCardsSx }}>
+				<Stack spacing={4} sx={{ paddingBottom: 4 }}>
 					<PageHeader title="Settings" subtitle="TIDALuna itself: version, shortcuts, core plugins, cache and backups" />
 					{switcher}
 					<LunaVersionInfo />
@@ -43,8 +43,8 @@ export const SettingsTab = React.memo(() => {
 					{/* Same cards as in the Installed tab, without the switch and Uninstall */}
 					<Stack component="section" spacing={1.5} data-luna-core-plugins>
 						<Stack spacing={0.25}>
-							<Typography variant="h6" sx={{ fontWeight: 700, fontSize: "1.15rem" }} children="Luna core plugins" />
-							<Typography variant="body2" sx={{ color: "text.secondary" }} children="Plugins providing core Luna functionality, always on" />
+							<Typography variant="h7" component="h2" children="Luna core plugins" />
+							<Typography variant="subtitle2" children="Plugins providing core Luna functionality, always on" />
 						</Stack>
 						<Box sx={cardGridSx}>
 							{corePlugins.map((plugin) => (

@@ -28,10 +28,7 @@ export const ThemesView = React.memo(({ switcher }: { switcher: React.ReactNode 
 			<PageHeader title="Installed" subtitle={`${installed.length} themes installed · ${enabled} on · Ctrl+Shift+T turns them all off`} />
 			{switcher}
 			<Stack direction="row" sx={{ alignItems: "center", gap: 1 }}>
-				<Box
-					sx={{ flexGrow: 1, "& .MuiOutlinedInput-root": { borderRadius: 2, backgroundColor: "rgba(255, 255, 255, 0.08)" } }}
-					children={<InstallFromUrl />}
-				/>
+				<Box sx={{ flexGrow: 1 }} children={<InstallFromUrl />} />
 				<Button
 					size="small"
 					startIcon={<StorefrontIcon />}

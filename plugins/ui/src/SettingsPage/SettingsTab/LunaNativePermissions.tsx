@@ -7,7 +7,7 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 
 import { PageHeader } from "../PageHeader";
-import { cardSx, emptyStateSx, hairline, softButton } from "../styles";
+import { emptyStateSx, panelSx, softButton } from "../styles";
 
 import type { NativePermissionEntry } from "../../../../../native/NativeModule/trust";
 
@@ -66,7 +66,7 @@ export const LunaNativePermissions = React.memo(({ switcher }: { switcher: React
 
 	const groups = groupByPlugin(entries);
 	return (
-		<Stack spacing={2.5} sx={{ paddingBottom: 4 }}>
+		<Stack spacing={4} sx={{ paddingBottom: 4 }}>
 			<PageHeader
 				title="Settings"
 				subtitle="Whether plugins' native code may run in TIDAL's main process, as you answered when it asked. Revoke an answer to be asked again the next time the plugin loads"
@@ -76,32 +76,23 @@ export const LunaNativePermissions = React.memo(({ switcher }: { switcher: React
 				<Typography role="status" variant="body2" sx={emptyStateSx} children="No answers yet: plugins with native code ask when they first load." />
 			)}
 			{groups.map(({ plugin, source, checked, entries }) => (
-				<Box key={`${source}\n${plugin}`} component="section" data-luna-native-permissions={plugin} sx={cardSx}>
-					<Typography variant="subtitle1" component="h3" sx={{ fontWeight: 700 }} children={plugin} />
-					<Typography variant="body2" sx={{ color: "text.secondary", overflowWrap: "anywhere" }}>
-						{source}
-						{!checked && " (not checked: answers hold for this version only)"}
-					</Typography>
-					<Stack sx={{ marginTop: 1 }}>
+				<Stack key={`${source}\n${plugin}`} component="section" spacing={1.5} data-luna-native-permissions={plugin}>
+					<div>
+						<Typography variant="h7" component="h3" children={plugin} />
+						<Typography variant="subtitle2" sx={{ overflowWrap: "anywhere" }}>
+							{source}
+							{!checked && " (not checked: answers hold for this version only)"}
+						</Typography>
+					</div>
+					<Stack sx={panelSx}>
 						{entries.map(({ key, fileName, answer, modules }) => (
-							<Stack
-								key={key}
-								direction="row"
-								sx={{
-									alignItems: "center",
-									gap: 2,
-									paddingY: 1,
-									borderTop: "1px solid",
-									borderColor: hairline,
-									"&:first-of-type": { borderTop: "none" },
-								}}
-							>
+							<Stack key={key} direction="row" sx={{ alignItems: "center", gap: 2 }}>
 								<Box sx={{ minWidth: 0, flexGrow: 1 }}>
-									<Typography variant="body2" sx={{ fontFamily: "monospace" }} children={splitFileName(fileName).file} />
+									<Typography variant="h8" component="div" sx={{ fontFamily: "monospace" }} children={splitFileName(fileName).file} />
 									{modules.length > 0 && (
 										<Typography
-											variant="caption"
-											sx={{ color: "text.secondary", overflowWrap: "anywhere" }}
+											variant="subtitle2"
+											sx={{ overflowWrap: "anywhere" }}
 											children={`Its code names ${modules.join(", ")} (for information, not a limit)`}
 										/>
 									)}
@@ -111,7 +102,7 @@ export const LunaNativePermissions = React.memo(({ switcher }: { switcher: React
 							</Stack>
 						))}
 					</Stack>
-				</Box>
+				</Stack>
 			))}
 		</Stack>
 	);

@@ -99,7 +99,7 @@ export const LunaClientUpdate = React.memo(() => {
 							{value === latest && value !== version && <Chip size="small" color="info" sx={tag} label="latest" />}
 						</Stack>
 					)}
-					sx={{ height: 40, borderRadius: 2, "& .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(255, 255, 255, 0.15)" } }}
+					sx={{ height: 40 }}
 					MenuProps={{
 						anchorOrigin: { vertical: "bottom", horizontal: "left" },
 						transformOrigin: { vertical: "top", horizontal: "left" },

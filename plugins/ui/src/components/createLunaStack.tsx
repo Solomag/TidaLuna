@@ -15,19 +15,25 @@ export const createLunaStack = (
 	name: "LunaStack" | "LunaSettings",
 	defaultVariant?: TypographyProps["variant"],
 	contentStyles: (theme: Theme) => CSSObject = () => ({}),
+	defaultSpacing = 1,
+	rootStyles: CSSObject = {},
 ) => {
-	const Root = styled(Box, { name, slot: "Root" })({});
+	const Root = styled(Box, { name, slot: "Root" })(rootStyles);
 	const Spacer = styled("div", { name, slot: "Spacer" })({ height: 8 });
 	const Content = styled(Stack, { name, slot: "Content" })(({ theme }) => contentStyles(theme));
 
 	const Component = React.memo((inProps: LunaStackProps) => {
 		const props = useThemeProps({ props: inProps, name });
 		const { title, desc, variant = defaultVariant, titleChildren, ...stackProps } = props;
+		// `${name}-row` lets styles tell side by side content from a list of rows (responsive directions count if row at any size)
+		const { direction } = stackProps;
+		const isRow = direction === "row" || (typeof direction === "object" && direction !== null && Object.values(direction).includes("row"));
+		const contentClass = [`${name}-content`, isRow && `${name}-row`, stackProps.className].filter(Boolean).join(" ");
 		return (
 			<Root className={`${name}-root`}>
 				{title && <LunaTitle variant={variant} title={title} desc={desc} children={titleChildren} />}
 				<Spacer className={`${name}-spacer`} />
-				<Content spacing={1} {...stackProps} className={stackProps.className ? `${name}-content ${stackProps.className}` : `${name}-content`} />
+				<Content spacing={defaultSpacing} {...stackProps} className={contentClass} />
 			</Root>
 		);
 	});

@@ -36,16 +36,7 @@ const updateBorder = "rgba(144, 202, 249, 0.6)";
 const SettingsDialog = ({ plugin, name, open, onClose }: { plugin: LunaPlugin; name: string; open: boolean; onClose: () => void }) => {
 	const Settings = plugin.exports?.Settings;
 	return (
-		<Dialog
-			open={open}
-			onClose={onClose}
-			fullWidth
-			maxWidth="md"
-			aria-labelledby={`luna-settings-${plugin.name}`}
-			slotProps={{
-				paper: { sx: { backgroundColor: "#121212", backgroundImage: "none", borderRadius: 3, border: "1px solid rgba(255, 255, 255, 0.1)" } },
-			}}
-		>
+		<Dialog open={open} onClose={onClose} fullWidth maxWidth="md" aria-labelledby={`luna-settings-${plugin.name}`}>
 			<DialogTitle id={`luna-settings-${plugin.name}`} sx={{ display: "flex", alignItems: "center", gap: 1, fontWeight: 700 }}>
 				{name}
 				<Typography variant="body2" component="span" sx={{ color: "text.secondary" }} children="settings" />
